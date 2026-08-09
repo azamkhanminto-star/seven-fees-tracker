@@ -1,348 +1,72 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#fcfcfb">
-<title>Seven Fees Tracker — Coaching Institute Fee &amp; Expense Modeller</title>
+<meta name="theme-color" content="#101114">
+<title>3M Detailing — Workshop Management</title>
+<meta name="description" content="Job cards, bookings, customers, feedback, inventory and accounts for a car wash and detailing workshop.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="assets/styles.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="icon" href="assets/icon.svg">
+<link rel="apple-touch-icon" href="assets/icon.svg">
 </head>
 <body>
 
 <header class="topbar">
   <div class="brand">
-    <span class="brand-mark">7</span>
+    <span class="brand-mark">3M</span>
     <div class="brand-text">
-      <strong id="instituteName">Seven Coaching Institute</strong>
-      <span id="todayLabel" class="muted"></span>
+      <strong id="shopName">3M Detailing</strong>
+      <span class="muted" id="shopSub">Workshop management</span>
     </div>
   </div>
+
+  <div class="topbar-search">
+    <input type="search" id="globalSearch" placeholder="Search job card, customer, phone or vehicle…" autocomplete="off" aria-label="Search">
+    <div class="search-results" id="searchResults" hidden></div>
+  </div>
+
   <div class="topbar-actions">
-    <button class="btn ghost" id="themeToggle" type="button" title="Toggle theme">◑</button>
+    <button class="btn primary" id="btnNewJob" type="button">+ Job card</button>
+    <button class="btn ghost icon" id="themeToggle" type="button" title="Switch light / dark" aria-label="Switch theme">◑</button>
   </div>
 </header>
 
-<nav class="tabs" role="tablist">
+<nav class="tabs" id="tabs" role="tablist" aria-label="Sections">
   <button class="tab is-active" role="tab" data-view="dashboard">Dashboard</button>
-  <button class="tab" role="tab" data-view="collection">Fee In</button>
-  <button class="tab" role="tab" data-view="outflow">Out &amp; Expense</button>
-  <button class="tab" role="tab" data-view="students">Students</button>
-  <button class="tab" role="tab" data-view="daily">Daily Report</button>
-  <button class="tab" role="tab" data-view="settings">Settings</button>
+  <button class="tab" role="tab" data-view="jobs">Job Cards</button>
+  <button class="tab" role="tab" data-view="bookings">Bookings</button>
+  <button class="tab" role="tab" data-view="customers">Customers</button>
+  <button class="tab" role="tab" data-view="feedback">Feedback</button>
+  <button class="tab" role="tab" data-view="followups">Follow-ups</button>
+  <button class="tab" role="tab" data-view="inventory">Inventory</button>
+  <button class="tab" role="tab" data-view="accounts">Accounts</button>
+  <button class="tab" role="tab" data-view="reports">Reports</button>
+  <button class="tab" role="tab" data-view="setup">Setup</button>
 </nav>
 
-<main>
+<main id="app" tabindex="-1"><!-- views render here --></main>
 
-  <!-- ══════════════════ DASHBOARD ══════════════════ -->
-  <section class="view is-active" id="view-dashboard">
-    <div class="range-row">
-      <label>From <input type="date" id="dashFrom"></label>
-      <label>To <input type="date" id="dashTo"></label>
-      <button class="btn ghost sm" data-preset="today" type="button">Today</button>
-      <button class="btn ghost sm" data-preset="7" type="button">7 days</button>
-      <button class="btn ghost sm" data-preset="30" type="button">30 days</button>
-      <button class="btn ghost sm" data-preset="mtd" type="button">This month</button>
-      <button class="btn ghost sm" data-preset="all" type="button">All time</button>
-    </div>
+<footer class="app-foot">
+  <span class="muted sm">3M Detailing · data stays on this device — take a backup from <a href="#setup" data-nav="setup">Setup → Data</a>.</span>
+</footer>
 
-    <div class="tiles">
-      <div class="tile accent-in">
-        <span class="tile-label">Collection today</span>
-        <strong class="tile-value" id="kpiToday">—</strong>
-        <span class="tile-sub muted" id="kpiTodayCount">—</span>
-      </div>
-      <div class="tile accent-in">
-        <span class="tile-label">Total collection (In)</span>
-        <strong class="tile-value" id="kpiIn">—</strong>
-        <span class="tile-sub muted" id="kpiInSub">selected range</span>
-      </div>
-      <div class="tile accent-out">
-        <span class="tile-label">Money out (refunds)</span>
-        <strong class="tile-value" id="kpiOut">—</strong>
-        <span class="tile-sub muted" id="kpiOutSub">selected range</span>
-      </div>
-      <div class="tile accent-exp">
-        <span class="tile-label">Expenses</span>
-        <strong class="tile-value" id="kpiExpense">—</strong>
-        <span class="tile-sub muted" id="kpiExpenseSub">selected range</span>
-      </div>
-      <div class="tile accent-net">
-        <span class="tile-label">Remaining in hand</span>
-        <strong class="tile-value" id="kpiNet">—</strong>
-        <span class="tile-sub muted">In − Out − Expense</span>
-      </div>
-      <div class="tile accent-due">
-        <span class="tile-label">Pending fee (dues)</span>
-        <strong class="tile-value" id="kpiDue">—</strong>
-        <span class="tile-sub muted" id="kpiDueSub">—</span>
-      </div>
-    </div>
+<div class="modal-wrap" id="modal" aria-live="polite"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <div class="card">
-      <div class="card-head">
-        <h2>Daily money flow</h2>
-        <div class="legend" id="flowLegend">
-          <span class="legend-item"><i class="swatch s1"></i>Collection</span>
-          <span class="legend-item"><i class="swatch s2"></i>Out + Expense</span>
-        </div>
-      </div>
-      <div id="flowChart" class="chart"></div>
-      <p class="muted sm" id="flowEmpty" hidden>No entries in this range yet.</p>
-    </div>
-
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-head"><h2>Expense split</h2></div>
-        <div id="expenseSplit" class="split"></div>
-      </div>
-      <div class="card">
-        <div class="card-head"><h2>Recent entries</h2></div>
-        <div class="table-wrap">
-          <table class="table" id="recentTable">
-            <thead><tr><th>Date</th><th>Detail</th><th>Type</th><th class="num">Amount</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ══════════════════ FEE IN ══════════════════ -->
-  <section class="view" id="view-collection">
-    <div class="card">
-      <div class="card-head"><h2>Collect fee</h2></div>
-      <form id="feeForm" class="form-grid">
-        <label>Date
-          <input type="date" name="date" required>
-        </label>
-        <label>Student
-          <select name="studentId" id="feeStudent" required></select>
-        </label>
-        <label>Amount
-          <input type="number" name="amount" min="1" step="0.01" placeholder="0" required>
-        </label>
-        <label>Fee for (month / term)
-          <input type="text" name="period" placeholder="e.g. August 2026 or Term 1">
-        </label>
-        <label>Mode
-          <select name="mode">
-            <option>Cash</option><option>UPI</option><option>Bank transfer</option>
-            <option>Cheque</option><option>Card</option>
-          </select>
-        </label>
-        <label>Note
-          <input type="text" name="note" placeholder="optional">
-        </label>
-        <div class="form-actions">
-          <button class="btn primary" type="submit">Save collection</button>
-          <button class="btn ghost" type="reset">Clear</button>
-        </div>
-      </form>
-      <p class="hint muted sm" id="feeHint"></p>
-    </div>
-
-    <div class="card">
-      <div class="card-head">
-        <h2>Collection entries</h2>
-        <div class="head-tools">
-          <input type="search" id="feeSearch" placeholder="Search student / note…">
-          <button class="btn ghost sm" id="feeExport" type="button">Export CSV</button>
-        </div>
-      </div>
-      <div class="table-wrap">
-        <table class="table" id="feeTable">
-          <thead><tr>
-            <th>Receipt</th><th>Date</th><th>Student</th><th>Period</th>
-            <th>Mode</th><th class="num">Amount</th><th></th>
-          </tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <p class="muted sm" id="feeEmpty" hidden>No collections recorded yet.</p>
-    </div>
-  </section>
-
-  <!-- ══════════════════ OUT & EXPENSE ══════════════════ -->
-  <section class="view" id="view-outflow">
-    <div class="card">
-      <div class="card-head"><h2>Record money going out</h2></div>
-      <form id="outForm" class="form-grid">
-        <label>Date
-          <input type="date" name="date" required>
-        </label>
-        <label>Kind
-          <select name="type" id="outType">
-            <option value="expense">Expense (institute cost)</option>
-            <option value="out">Out (refund / withdrawal)</option>
-          </select>
-        </label>
-        <label>Category
-          <select name="category" id="outCategory"></select>
-        </label>
-        <label>Amount
-          <input type="number" name="amount" min="1" step="0.01" placeholder="0" required>
-        </label>
-        <label>Paid to / Student
-          <input type="text" name="party" placeholder="e.g. Landlord, Ravi Sharma">
-        </label>
-        <label>Note
-          <input type="text" name="note" placeholder="optional">
-        </label>
-        <div class="form-actions">
-          <button class="btn primary" type="submit">Save entry</button>
-          <button class="btn ghost" type="reset">Clear</button>
-        </div>
-      </form>
-    </div>
-
-    <div class="card">
-      <div class="card-head">
-        <h2>Out &amp; expense entries</h2>
-        <div class="head-tools">
-          <input type="search" id="outSearch" placeholder="Search category / party…">
-          <button class="btn ghost sm" id="outExport" type="button">Export CSV</button>
-        </div>
-      </div>
-      <div class="table-wrap">
-        <table class="table" id="outTable">
-          <thead><tr>
-            <th>Date</th><th>Kind</th><th>Category</th><th>Paid to</th>
-            <th>Note</th><th class="num">Amount</th><th></th>
-          </tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <p class="muted sm" id="outEmpty" hidden>Nothing recorded yet.</p>
-    </div>
-  </section>
-
-  <!-- ══════════════════ STUDENTS ══════════════════ -->
-  <section class="view" id="view-students">
-    <div class="card">
-      <div class="card-head"><h2 id="studentFormTitle">Add student</h2></div>
-      <form id="studentForm" class="form-grid">
-        <input type="hidden" name="id">
-        <label>Name
-          <input type="text" name="name" placeholder="Full name" required>
-        </label>
-        <label>Class / Batch
-          <input type="text" name="batch" placeholder="e.g. Class 10 — Morning">
-        </label>
-        <label>Phone
-          <input type="tel" name="phone" placeholder="optional">
-        </label>
-        <label>Course fee (total agreed)
-          <input type="number" name="totalFee" min="0" step="0.01" placeholder="0">
-        </label>
-        <label>Admission date
-          <input type="date" name="admissionDate">
-        </label>
-        <label>Status
-          <select name="active"><option value="1">Active</option><option value="0">Inactive</option></select>
-        </label>
-        <div class="form-actions">
-          <button class="btn primary" type="submit" id="studentSubmit">Add student</button>
-          <button class="btn ghost" type="button" id="studentCancel" hidden>Cancel edit</button>
-        </div>
-      </form>
-    </div>
-
-    <div class="card">
-      <div class="card-head">
-        <h2>Students &amp; dues</h2>
-        <div class="head-tools">
-          <input type="search" id="studentSearch" placeholder="Search name / batch…">
-          <button class="btn ghost sm" id="studentExport" type="button">Export CSV</button>
-        </div>
-      </div>
-      <div class="table-wrap">
-        <table class="table" id="studentTable">
-          <thead><tr>
-            <th>Name</th><th>Batch</th><th>Phone</th>
-            <th class="num">Course fee</th><th class="num">Paid</th><th class="num">Due</th>
-            <th>Status</th><th></th>
-          </tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <p class="muted sm" id="studentEmpty" hidden>No students added yet.</p>
-    </div>
-  </section>
-
-  <!-- ══════════════════ DAILY REPORT ══════════════════ -->
-  <section class="view" id="view-daily">
-    <div class="card">
-      <div class="card-head">
-        <h2>Day-by-day ledger</h2>
-        <div class="head-tools">
-          <label class="inline">Month
-            <input type="month" id="dailyMonth">
-          </label>
-          <button class="btn ghost sm" id="dailyAll" type="button">All time</button>
-          <button class="btn ghost sm" id="dailyExport" type="button">Export CSV</button>
-          <button class="btn ghost sm" id="dailyPrint" type="button">Print</button>
-        </div>
-      </div>
-      <div class="table-wrap">
-        <table class="table" id="dailyTable">
-          <thead><tr>
-            <th>Date</th><th class="num">Entries</th><th class="num">In</th>
-            <th class="num">Out</th><th class="num">Expense</th>
-            <th class="num">Net of day</th><th class="num">Running balance</th>
-          </tr></thead>
-          <tbody></tbody>
-          <tfoot></tfoot>
-        </table>
-      </div>
-      <p class="muted sm" id="dailyEmpty" hidden>No entries for this period.</p>
-    </div>
-  </section>
-
-  <!-- ══════════════════ SETTINGS ══════════════════ -->
-  <section class="view" id="view-settings">
-    <div class="card">
-      <div class="card-head"><h2>Institute settings</h2></div>
-      <form id="settingsForm" class="form-grid">
-        <label>Institute name
-          <input type="text" name="instituteName" required>
-        </label>
-        <label>Currency symbol
-          <input type="text" name="currency" maxlength="3">
-        </label>
-        <label>Opening balance (cash carried forward)
-          <input type="number" name="openingBalance" step="0.01">
-        </label>
-        <label>Expense categories (comma separated)
-          <input type="text" name="expenseCategories">
-        </label>
-        <div class="form-actions">
-          <button class="btn primary" type="submit">Save settings</button>
-        </div>
-      </form>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h2>Backup &amp; data</h2></div>
-      <p class="muted sm">All data lives in this browser only. Take a backup regularly.</p>
-      <div class="form-actions">
-        <button class="btn" id="backupBtn" type="button">Download backup (JSON)</button>
-        <button class="btn" id="restoreBtn" type="button">Restore from backup</button>
-        <input type="file" id="restoreFile" accept="application/json" hidden>
-        <button class="btn" id="demoBtn" type="button">Load sample data</button>
-        <button class="btn danger" id="resetBtn" type="button">Erase all data</button>
-      </div>
-      <p class="muted sm" id="dataStats"></p>
-    </div>
-  </section>
-
-</main>
-
-<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-
-<div id="receipt" class="receipt-sheet" hidden></div>
-
+<script src="assets/util.js"></script>
+<script src="assets/store.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/view-dashboard.js"></script>
+<script src="assets/view-jobs.js"></script>
+<script src="assets/view-bookings.js"></script>
+<script src="assets/view-customers.js"></script>
+<script src="assets/view-feedback.js"></script>
+<script src="assets/view-followups.js"></script>
+<script src="assets/view-inventory.js"></script>
+<script src="assets/view-accounts.js"></script>
+<script src="assets/view-reports.js"></script>
+<script src="assets/view-setup.js"></script>
 </body>
 </html>

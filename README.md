@@ -1,78 +1,127 @@
-# Seven Fees Tracker
+# 3M Detailing — Workshop Management
 
-A fee and cash-flow modeller for a coaching institute. It tracks money **in**
-(fee collection), money **out** (refunds, withdrawals), **expenses**, what is
-**remaining** (cash in hand and pending student dues), and the **total
-collection per day**.
+A complete management system for a car wash and detailing workshop: washing,
+service, denting & painting, detailing, rubbing & polishing, interior dry
+cleaning, ceramic coating and PPF.
 
-It is a single-page app with no server and no build step — open `index.html`
-and it works. All data is kept in the browser's `localStorage` on the device
-you use it on.
+It is a single-page app with **no server and no build step** — open
+`index.html` and it works. All data is stored in the browser's `localStorage`
+on the device that entered it, so it also runs offline and can be installed to
+a phone or tablet home screen.
 
 ## Running it
 
-Open `index.html` directly in a browser, or serve the folder:
-
 ```bash
 python3 -m http.server 8000
-# then visit http://localhost:8000
+# then open http://localhost:8000
 ```
 
-Serving over `http(s)` also registers the service worker, so the app keeps
-working offline and can be installed to a phone home screen ("Add to Home
-Screen").
+Opening `index.html` directly from the file system works too, but serving it
+over `http(s)` also registers the service worker, which is what makes the app
+work offline and installable ("Add to Home Screen").
 
-First time in, go to **Settings → Load sample data** to see the app populated,
-then **Erase all data** when you are ready to enter real numbers.
+On first run the app offers to load a **sample workshop** — three months of
+job cards, payments, expenses, reviews and stock. Erase it from
+**Setup → Data → Erase all data** when you are ready for real numbers.
 
-## What each tab does
+## The ten sections
 
-| Tab | Purpose |
+| Tab | What it is for |
 |---|---|
-| **Dashboard** | Today's collection, totals for a chosen date range, cash in hand, pending dues, a daily money-flow chart and an expense split. |
-| **Fee In** | Record a fee collection against a student, with receipt number, period, and payment mode. Printable receipt per entry. |
-| **Out & Expense** | Record institute expenses (rent, salary, electricity…) and money out (refunds, owner withdrawal). |
-| **Students** | Add students with their agreed course fee. The table shows fee, paid, and due per student. |
-| **Daily Report** | Day-by-day ledger: entries, in, out, expense, net of the day, and a running cash balance. Filter by month, export or print. |
-| **Settings** | Institute name, currency, opening balance, expense categories, backup/restore, reset. |
+| **Dashboard** | Money for the chosen period, vehicles on the floor, today's bookings, who needs a call, latest reviews, low-stock warnings. |
+| **Job Cards** | The core record: one card per vehicle, with services, technicians, charges, payments, status and printable job card + invoice. List view or workshop board. |
+| **Bookings** | Slot bookings by day and bay, WhatsApp reminders, and one-click conversion into a job card when the vehicle arrives. |
+| **Customers** | Customers, their vehicles, full service history, lifetime spend, dues and ratings. |
+| **Feedback** | Ratings per job, per aspect and per technician, open complaints, a tablet form the customer fills in, and a review-request list. |
+| **Follow-ups** | The daily call list — coating/PPF warranties ending, washes and services falling due, money to collect, cars ready for delivery, own reminders. |
+| **Inventory** | Shampoo, compound, coating, PPF film and the rest: stock in hand, re-order alerts, purchases, and automatic deduction when a job is delivered. |
+| **Accounts** | Payments in, expenses out, day book with running cash balance, and outstanding receivables. |
+| **Reports** | Revenue by service, by vehicle size and by month; technician performance and commission; top customers; busiest days; new vs repeat. |
+| **Setup** | Service menu and prices, staff, workshop details and billing, backup / restore. |
+
+## How the workshop flow works
+
+1. **Booking** (optional) → customer calls, you take a slot with bay and technician.
+2. **Job card** → vehicle arrives, you record customer, vehicle, services,
+   technician per service, odometer, fuel level and an intake check (spare
+   wheel, tool kit, stereo, floor mats, existing scratches and dents). Print
+   it and get it signed.
+3. **Status** moves `Booked → Received → In Progress → Ready → Delivered`.
+   Marking it *Delivered* asks for the balance payment and deducts the
+   materials each service uses from stock.
+4. **Invoice** prints with warranty lines for coating, PPF and paint, or goes
+   out on WhatsApp.
+5. **Feedback** is collected on the tablet or recorded by staff; anything at
+   3 ★ or below shows up as an open complaint until you close it with the
+   action you took.
+6. **Follow-ups** then bring the customer back — next wash due, coating
+   warranty ending, payment pending.
+
+## Pricing model
+
+Every service carries a price **per vehicle size** (Bike, Hatchback, Sedan,
+SUV, Luxury by default). When you pick a service on a job card, the price for
+that vehicle's size is filled in automatically and can still be edited on the
+line. Each service also holds:
+
+- **Time needed** — for planning the day.
+- **Warranty (months)** — drives "warranty ending" follow-ups; use it for
+  ceramic coating, PPF and paint.
+- **Remind again after (days)** — drives repeat-service reminders (wash every
+  15 days, detailing every 120 days, and so on).
+- **Materials** — inventory items and quantities consumed, deducted
+  automatically on delivery.
+
+Sizes, bays, expense categories, tax label and rate, currency symbol and the
+job-card number series are all editable in **Setup → Workshop**.
 
 ## How the numbers are calculated
 
-- **Collection today** — sum of all *fee in* entries dated today.
-- **Total collection (In)** — sum of *fee in* entries inside the selected date range.
-- **Money out** — refunds and withdrawals in the range.
-- **Expenses** — institute costs in the range.
-- **Remaining in hand** (tile value) — `In − Out − Expense` for the selected
-  range. The line under it shows the all-time cash position, which is
-  `opening balance + all In − all Out − all Expense`.
-- **Pending fee (dues)** — for each active student with a course fee set:
-  `max(0, course fee − amount paid)`, summed. Students with no course fee
-  recorded are treated as having no due.
-- **Running balance** in the daily report starts from the opening balance in
-  Settings and accumulates each day's net, so it reflects the true cash
-  position on that date — including days outside the month you are viewing.
+- **Revenue billed** — total of all non-cancelled job cards dated in the range
+  (subtotal − discount + tax).
+- **Cash collected** — payments actually received in the range, whatever job
+  card they belong to.
+- **Expenses** — shop costs recorded in Accounts, plus material purchases when
+  you tick "also record as an expense".
+- **Gross profit** — billed − expenses. Material cost is inside expenses when
+  purchases are recorded, so it is not deducted twice.
+- **Cash in hand** — opening balance + all payments received − all expenses.
+- **Receivables** — for every job card, `total − payments received`, summed.
+- **Rating** — mean of overall ratings; *happy customers* is the share at
+  4 ★ or above; *recommend score* is promoters (5 ★) minus unhappy (≤ 3 ★) as
+  a percentage of all reviews.
+- **Technician revenue** — value of the job lines assigned to that person;
+  **commission** is that value × the percentage on their staff record.
+- **Running balance** in the day book starts from the opening balance and
+  includes every movement before the window, so the closing figure is the true
+  cash position on that date.
 
-## Data, backup, and safety
+## Data, backup and safety
 
-Data lives only in the browser profile that entered it. It is not synced
-anywhere, so:
+Data lives only in the browser profile that entered it. It is never uploaded
+anywhere. So:
 
-- Take a **backup** (Settings → Download backup) regularly; it is a JSON file
-  that can be restored on any device.
-- Clearing browser site data, or using a private window, will lose entries.
-- Each device keeps its own separate copy.
+- Take a **backup** regularly (Setup → Data → Download backup). It is a JSON
+  file that restores on any device.
+- Clearing browser site data, or using a private window, loses everything.
+- Each device keeps its own separate copy — use backup/restore to move data.
 
-CSV exports are available for collections, expenses, students, and the daily
-report, so figures can be handed to an accountant or opened in a spreadsheet.
+CSV exports are available for job cards, customers, feedback, bookings,
+inventory, accounts and reports, plus an "export everything" dump, so figures
+can be handed to an accountant or opened in a spreadsheet.
 
 ## Files
 
 ```
-index.html              markup for all six views
-assets/styles.css       theme tokens, layout, light + dark
-assets/app.js           storage, calculations, rendering, chart
-sw.js                   offline cache
-manifest.webmanifest    installable-app metadata
+index.html                 app shell (top bar, tabs, modal host)
+assets/styles.css          theme tokens, layout, light + dark, print rules
+assets/util.js             formatting, dates, DOM, dialogs, CSV, print, charts
+assets/store.js            data model, persistence, all derived calculations
+assets/app.js              routing, global search, shared UI helpers
+assets/view-*.js           one file per section
+sw.js                      offline cache
+manifest.webmanifest       installable-app metadata
+fees/                      the earlier coaching-institute fee tracker, unchanged
 ```
 
 No dependencies, no framework, no network calls.

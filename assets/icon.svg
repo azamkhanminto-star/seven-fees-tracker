@@ -1,5 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
-  <rect width="192" height="192" rx="40" fill="#2a78d6"/>
-  <text x="96" y="132" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
-        font-size="110" font-weight="700" fill="#ffffff">7</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="3M Detailing">
+  <rect width="512" height="512" rx="112" fill="#1f6fd0"/>
+  <path d="M96 322c0-14 8-26 21-31l38-15 26-52c9-19 28-31 49-31h152c21 0 40 12 49 31l26 52 38 15c13 5 21 17 21 31v46c0 9-7 16-16 16h-24v18c0 15-12 27-27 27h-14c-15 0-27-12-27-27v-18H190v18c0 15-12 27-27 27h-14c-15 0-27-12-27-27v-18h-10c-9 0-16-7-16-16z" fill="#ffffff" opacity=".95"/>
+  <path d="M186 208l22-44c4-8 12-13 21-13h134c9 0 17 5 21 13l22 44z" fill="#1f6fd0"/>
+  <circle cx="170" cy="330" r="20" fill="#1f6fd0"/>
+  <circle cx="426" cy="330" r="20" fill="#1f6fd0"/>
+  <g fill="#ffffff">
+    <circle cx="120" cy="120" r="13" opacity=".95"/>
+    <circle cx="168" cy="88" r="9" opacity=".8"/>
+    <circle cx="86" cy="176" r="9" opacity=".7"/>
+    <circle cx="150" cy="164" r="6" opacity=".6"/>
+  </g>
 </svg>
