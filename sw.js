@@ -1,13 +1,25 @@
-/* Offline cache for Seven Fees Tracker.
-   Bump CACHE when any shell file changes. */
-var CACHE = 'seven-fees-v1';
+/* Offline cache for the 3M Detailing workshop manager.
+   Bump CACHE whenever a shell file changes. */
+var CACHE = '3m-detailing-v1';
 var SHELL = [
   './',
   './index.html',
+  './manifest.webmanifest',
   './assets/styles.css',
-  './assets/app.js',
   './assets/icon.svg',
-  './manifest.webmanifest'
+  './assets/util.js',
+  './assets/store.js',
+  './assets/app.js',
+  './assets/view-dashboard.js',
+  './assets/view-jobs.js',
+  './assets/view-bookings.js',
+  './assets/view-customers.js',
+  './assets/view-feedback.js',
+  './assets/view-followups.js',
+  './assets/view-inventory.js',
+  './assets/view-accounts.js',
+  './assets/view-reports.js',
+  './assets/view-setup.js'
 ];
 
 self.addEventListener('install', function (ev) {
@@ -26,8 +38,8 @@ self.addEventListener('activate', function (ev) {
   self.clients.claim();
 });
 
-/* Network first, so an updated app is picked up as soon as the
-   device is online; the cache is the offline fallback. */
+/* Network first so an updated app is picked up as soon as the device is
+   online; the cache is the offline fallback. */
 self.addEventListener('fetch', function (ev) {
   if (ev.request.method !== 'GET') return;
   ev.respondWith(

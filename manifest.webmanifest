@@ -1,12 +1,13 @@
 {
-  "name": "Seven Fees Tracker",
-  "short_name": "Fees",
-  "description": "Coaching institute fee collection, expenses, dues and daily ledger.",
+  "name": "3M Detailing — Workshop Management",
+  "short_name": "3M Detailing",
+  "description": "Job cards, bookings, customers, feedback, inventory and accounts for a car wash and detailing workshop.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
-  "background_color": "#f9f9f7",
-  "theme_color": "#2a78d6",
+  "orientation": "any",
+  "background_color": "#f4f5f7",
+  "theme_color": "#1f6fd0",
   "icons": [
     {
       "src": "assets/icon.svg",
