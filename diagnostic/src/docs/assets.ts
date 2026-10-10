@@ -42,7 +42,7 @@ const logoCache: Partial<Record<LogoVariant, string>> = {};
 export function logoDataUri(variant: LogoVariant): string {
   if (logoCache[variant]) return logoCache[variant]!;
   const file = variant === "dark" ? "seven-logo.svg" : "seven-logo-light.svg";
-  const svg = fs.readFileSync(path.join(ROOT, "brand", file));
+  const svg = fs.readFileSync(path.join(ROOT, "public", "brand", file));
   return (logoCache[variant] = `data:image/svg+xml;base64,${svg.toString("base64")}`);
 }
 

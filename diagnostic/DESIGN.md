@@ -1,7 +1,11 @@
 # SEVEN Root Diagnostic System — Design (for approval)
 
 SEVEN Career Institute, Medical Road, Aligarh
-Status: **proposal v2, revised after studying the Aariz reference pack. No code yet.**
+Status: **approved. Phase 1 (Maths) built in this folder; see README.md.**
+
+Owner decisions (October 2026):
+* **Design:** teal and white throughout, from the SEVEN logo (`public/brand/`).
+* **Every upload gets the full pack:** whenever a teacher uploads a paper with an answer sheet, the system produces the complete Aariz-style results. A second paper in the same diagnosis adds the recurring-vs-fixed comparison.
 
 ---
 
@@ -23,7 +27,7 @@ What this changes in the design:
 3. **Each weak area is split into sub-skills**, and each sub-skill has its own lineage chain, with "secure" evidence as well as "weak" evidence.
 4. **The output is long.** The pack runs to about 50 pages, so generation is split into more steps, and workbook material is kept in a reusable library (see §1).
 5. **Wording rules.** Student copies hide class levels. Pronouns follow the student profile. Every claim cites specific question numbers from specific papers.
-6. **Look and feel.** The pack uses dark green with a yellow accent; your brief says Navy `#052A61` with Yellow `#FBB605`; the logo itself uses teal `#0F766E` with yellow, red, green and blue bars. Colours will be one theme setting, set to whichever you confirm. Logos are in `diagnostic/brand/` as SVG.
+6. **Look and feel.** The pack uses dark green with a yellow accent; your brief says Navy `#052A61` with Yellow `#FBB605`; the logo itself uses teal `#0F766E` with yellow, red, green and blue bars. Colours will be one theme setting, set to whichever you confirm. Logos are in `diagnostic/public/brand/` as SVG.
 7. All four PDFs were produced by headless Chrome, which is the PDF approach proposed below, so the layouts can be reproduced closely.
 
 > Privacy note: the reference files contain a minor's name, school and roll number, so **they are not committed to this repository**. They will be kept only in private storage, and for testing we will use a de-identified copy ("Student A").

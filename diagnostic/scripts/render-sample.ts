@@ -15,7 +15,7 @@ async function main() {
   const types = wanted.length ? wanted : (Object.keys(DOC_TYPES) as DocType[]);
   for (const t of types) {
     try {
-      const { html } = renderDocumentHtml(t, STUDENT_A);
+      const { html } = await renderDocumentHtml(t, STUDENT_A);
       fs.writeFileSync(path.join(out, `${t}.html`), html);
       fs.writeFileSync(path.join(out, `${t}.pdf`), await htmlToPdf(html));
       console.log(`✓ ${t}`);

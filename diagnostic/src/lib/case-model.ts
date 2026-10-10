@@ -41,6 +41,8 @@ export type PaperBundle = {
 
 export type ConfirmationMark = "right" | "wrong" | "half";
 
+export type WorkbookPart = { weakArea: string; fixing: string; steps: WorkbookStep[] };
+
 export type CaseBundle = {
   caseId: string;
   subject: "maths";
@@ -50,7 +52,7 @@ export type CaseBundle = {
   analysis: AnalysisOut | null;
   tracing: TracingOut | null;
   confirmation: ConfirmationOut | null;
-  workbook: { weakArea: string; fixing: string; steps: WorkbookStep[] }[] | null;
+  workbook: WorkbookPart[] | null;
   plan: PlanOut | null;
   diagnostic: DiagnosticTestOut | null;
   confirmationResults: Record<string, ConfirmationMark> | null;
