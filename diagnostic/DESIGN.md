@@ -1,281 +1,329 @@
 # SEVEN Root Diagnostic System — Design (for approval)
 
 SEVEN Career Institute, Medical Road, Aligarh
-Status: **proposal, awaiting owner approval. No code yet.**
+Status: **proposal v2, revised after studying the Aariz reference pack. No code yet.**
 
 ---
 
-## 0. Tech stack (plain-language)
+## 0. What the reference pack taught us
+
+The Aariz set (Class X Maths, October 2026) is a **pack of four documents built from two papers**, not a single report:
+
+| # | Document | Pages | Audience | What it contains |
+|---|---|---|---|---|
+| 1 | **Diagnostic Test** (student paper) | 2 | Student | 64 marks, 3 sections (18×1, 11×2, 8×3), 90 min. Built to re-test what the school half-yearly exam showed. |
+| 2 | **Conceptual Mistakes Report** | 9 | Teacher / parent | Cover, contents, overview (both scores, count of recurring mistakes, "Good News"), **one page per recurring mistake** (what he writes ✗ / the correct idea ✓ / evidence from each paper / why it happens / teach this), "Fixed by the Diagnostic" table plus a word of caution, "What to Teach First" (priorities plus a check-in plan) |
+| 3 | **Remedial Teacher Pack** (confidential) | 17 | Teacher | **Part A** root-cause tracing: each weak area split into sub-skills, each sub-skill traced class by class to its NCERT chapter, break point highlighted with evidence, shared-roots table, "biggest payoff". **Part B** confirmation paper: tagging sheet (Q → class → concept → chapter), answer key, interpretation guide ("if he fails A4–A5 → break point Class 8 → start at Step 1.2"). **Part C** workbook level map (Level ↔ Class), checkpoint answers, final test key, improvement baseline. |
+| 4 | **Student Workbook** | 24 | Student | 24-day plan (45 min/day, 6 days a week), 4 parts × 4 levels. Each level has Understand it (with Hindi key terms), See it in real life, 2 solved examples, 5 practice questions with answers, Watch out, and a 5-question checkpoint (pass mark 4/5). Shows "Level 1–4", never class numbers. |
+
+What this changes in the design:
+
+1. **The analysis compares papers.** A mistake counts as *recurring* only if the same idea broke in both papers. Mistakes from the first paper that didn't come back are listed as *fixed*, with a caution that the improvement may be recent revision. The system therefore takes **one or more papers per student** and tracks findings across them.
+2. **The workflow is a cycle.** School exam → findings → *generated* diagnostic test → combined analysis → confirmation paper → (teacher marks it) → workbook levels to skip → workbook → final test → measured improvement.
+3. **Each weak area is split into sub-skills**, and each sub-skill has its own lineage chain, with "secure" evidence as well as "weak" evidence.
+4. **The output is long.** The pack runs to about 50 pages, so generation is split into more steps, and workbook material is kept in a reusable library (see §1).
+5. **Wording rules.** Student copies hide class levels. Pronouns follow the student profile. Every claim cites specific question numbers from specific papers.
+6. **Look and feel.** The pack uses dark green with a yellow accent; your brief says Navy `#052A61` with Yellow `#FBB605`. Colours will be one theme setting, set to whichever you confirm.
+7. All four PDFs were produced by headless Chrome, which is the PDF approach proposed below, so the layouts can be reproduced closely.
+
+> Privacy note: the reference files contain a minor's name, school and roll number, so **they are not committed to this repository**. They will be kept only in private storage, and for testing we will use a de-identified copy ("Student A").
+
+---
+
+## 1. Tech stack (plain-language)
 
 | Piece | Choice | Why, in plain words |
 |---|---|---|
-| Website + server | **Next.js (TypeScript)** hosted on **Vercel** | One project holds both the screens and the secure server code. Vercel deploys automatically on every push, so there are no servers to look after. |
-| Database, login, file storage | **Supabase** (managed PostgreSQL), **Mumbai region** | One service covers the database, user logins (admin, teacher, parent), private file storage for scans, and row-level security ("a teacher only sees their own batches"). Data is encrypted at rest and stays in India. |
-| AI engine | **Anthropic Messages API** via the official `@anthropic-ai/sdk`, called **only from the server** | The API key lives in Vercel environment variables and never reaches the browser. |
-| PDF export | Report page rendered by **headless Chromium** on the server | The PDF matches the on-screen report exactly, and Hindi (Devanagari) text renders correctly. Many lighter PDF libraries garble Hindi conjunct letters. |
-| Email | **Resend** (free tier covers this volume) | Sends the "your child's report is ready" email with a secure link. |
-| WhatsApp | `wa.me` share links | Free, no WhatsApp Business API approval needed. The message carries a private, expiring link, never the PDF or any marks. |
+| Website + server | **Next.js (TypeScript)** on **Vercel** | One project holds both the screens and the secure server code. It deploys automatically, with no servers to look after. |
+| Database, login, files | **Supabase** (PostgreSQL), **Mumbai region** | One service covers the database, logins, private storage for scans, and row-level security. Data is encrypted at rest and stays in India. |
+| AI engine | **Anthropic Messages API** (`@anthropic-ai/sdk`), **server only** | The API key lives in server environment variables and never reaches the browser. |
+| PDF export | Report pages rendered as HTML and printed by **headless Chromium** | Same method as the reference pack. Hindi renders correctly, and on-screen and PDF output match. |
+| Email / WhatsApp | **Resend** for email, `wa.me` links for WhatsApp | Free at this volume. Messages carry a private, expiring link, never marks or the PDF. |
 
-Expected running cost besides the AI: Vercel Pro about $20/month and Supabase Pro about $25/month, roughly ₹4,000/month together. (The free tiers are not meant for commercial use or for data about minors.)
+Running cost besides the AI: about **₹4,000/month** (Vercel Pro and Supabase Pro).
 
-Code location: a new `diagnostic/` folder in this repo, deployed as its own Vercel project. A separate repository also works; it's the owner's choice.
+### The reusable libraries (big cost and quality win)
 
----
+Much of the pack is the same for any student with the same gap. Step 1.1 "the distributive law" is identical for every student whose chain breaks there. So the system keeps three teacher-approved libraries:
 
-## 1. How a report is produced (pipeline)
+* **Workbook step library**, keyed by concept: understand-it, real-life example, solved examples, practice, watch-out, checkpoint, answers.
+* **Confirmation question bank**, keyed by concept and class level.
+* **Concept map**: NCERT/UP Board, Classes 5–10, with textbook edition.
 
-```
-Upload ─► [A] Read answer sheet (vision) ─► Teacher quick-check of transcription (optional)
-                                               │
-        Marks/scores computed by CODE ◄────────┘   (no AI arithmetic)
-                                               │
-       [B] Analysis  ─► [C] Confirmation paper ─► [D] Remedial plan + Parent summary (EN/HI)
-                                               │
-                    Teacher review / edit / approve ─► PDF ─► Share (WhatsApp / email)
-```
-
-* **Step A, Read.** This step runs only for scanned PDFs or photos. Claude reads the handwriting question by question and returns the student's answer and working, marks awarded if the teacher marked the sheet, and an `illegible` flag. For Excel/CSV marks sheets, code parses the file and makes no AI call.
-* **Scores are calculated by code**, not by Claude: totals, percentages, section-wise and topic-wise scores. This rules out AI arithmetic slips in the score table.
-* **Steps B, C and D are separate API calls**, each with its own JSON schema, so no response gets cut off. Each later step receives the output of the earlier ones.
-* **Structured outputs** (`output_config.format` with a JSON Schema) guarantee valid JSON. The report screen and the PDF are rendered from that JSON; raw text is never shown.
-* **Prompt caching.** The system prompt holds the fixed rules plus that subject's NCERT/UP Board concept map (Classes 5–10). It is marked `cache_control` with a 1-hour lifetime, so every report after the first in an hour pays about 10% for that block.
-* **Model routing** (admin can change both models in Settings):
-  * Routine: **`claude-sonnet-5-5`**
-  * Difficult: **`claude-opus-5-5`**. This model is used when (a) the teacher ticks "difficult case", (b) more than 25% of answers are illegible, (c) Step B reports low confidence on the break point, or (d) the teacher clicks "Re-analyse with deep model".
-* **Refusal fallback** is turned on (`fallbacks: "default"`), so an over-cautious safety refusal is retried automatically instead of failing.
-* **Every call is logged** with step, model, input, output, cache-read and cache-write tokens, cost, time taken, stop reason and errors.
-
-**Long jobs.** Each step runs as a server background task and its status is saved in the database. The teacher sees "Reading… → Analysing… → Writing paper…" and can close the tab while it runs.
+For each student, Claude *selects and orders* library items and writes only the personal parts: evidence, explanations, "why it happens", the plan. A new step is generated only when the library lacks one; a teacher approves it once and it is reused after that. Over time this makes packs cheaper, faster and more consistent.
 
 ---
 
-## 2. Database design (Supabase / PostgreSQL)
+## 2. Workflow and AI pipeline
 
-Every table has `id uuid`, `created_at` and `updated_at`. Row-level security rules: Admin sees all. A Teacher sees students in the batches assigned to them. A Parent sees only approved reports of their linked child.
+```
+           ┌──────────────────────────── one "Diagnostic Case" per student per subject ────────────────────────────┐
+ Paper 1 ─►│ [A] Read scan ─► [B1] Findings (paper 1) ─► [G] Generate diagnostic test (optional) ─► print, student sits it │
+ Paper 2 ─►│ [A] Read scan ─► [B2] Cross-paper analysis ─► [C] Root-cause tracing ─► [D] Confirmation paper + guide           │
+           │ Teacher marks confirmation paper ─► [E] Break points confirmed ─► [F] Workbook + final test + plan + parent summary│
+           │ Teacher review/approve ─► 4 branded PDFs ─► share ─► final test result ─► improvement vs baseline                 │
+           └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
 
-### People & access
+Single-paper mode also works: one paper → B → C → D → F. The report then says that recurrence couldn't be checked.
+
+| Step | What Claude does | Input | Output (JSON) |
+|---|---|---|---|
+| A Read | Reads handwriting question by question; flags illegible answers | Scans (PDF/images), question paper | `transcript` |
+| *code* | Marks, totals, section/topic scores | Transcript, key, marks sheet | `scores` |
+| B Analyse | Per-question outcome, error types, mistakes; across papers: recurring vs fixed | Transcripts, scores, concept map (cached) | `analysis` |
+| C Trace | Weak areas → sub-skills → lineage chains → break point → shared roots → biggest payoff | `analysis`, concept map (cached) | `tracing` |
+| D Confirm | Confirmation paper climbing from the lowest class, tagging sheet, key, interpretation rules | `tracing`, question bank | `confirmation` |
+| E Interpret | Applies the rules to the teacher's ✔/✘/½ marks; confirms break points and levels to skip | Marks entered by the teacher | `confirmed_breaks` (mostly code) |
+| F1 Workbook | Picks and orders library steps, writes missing steps, 24-day plan | `confirmed_breaks`, step library | `workbook` (one call per weak area) |
+| F2 Close | Final test mirroring the original wrong questions, baseline, priorities, parent summary EN/HI | Everything above | `plan` |
+| G Diagnostic | Builds a re-test from paper-1 findings | `analysis` of paper 1 | `diagnostic_test` |
+
+**API practices** (as in v1):
+
+* **Structured outputs:** every step returns JSON against a fixed schema, and the documents are rendered from that JSON.
+* **Prompt caching:** the system prompt holds the rules and that subject's concept map, with a 1-hour cache.
+* **Model routing**, both models changeable in Settings: `claude-sonnet-5-5` for routine cases, `claude-opus-5-5` for difficult ones. The difficult model is used when the teacher flags the case, when more than 25% of answers are illegible, when the analysis reports low confidence on a break point, or on "Re-analyse with deep model".
+* **Refusal fallback** is turned on.
+* **Every call is logged** with tokens and cost.
+* **Step F1** runs its weak-area calls in parallel.
+* **Bulk runs** (Phase 3) use the Batch API at half price.
+
+---
+
+## 3. Database design (Supabase / PostgreSQL)
+
+Every table has `id uuid`, `created_at` and `updated_at`. Row-level security: Admin sees all. A Teacher sees their assigned batches. A Parent sees only approved, shared documents for their linked child.
+
+### People, access, consent
 | Table | Key columns |
 |---|---|
-| `profiles` | `user_id` (Supabase auth), `role` (`admin`/`teacher`/`parent`), `full_name`, `phone_enc`, `active` |
-| `batches` | `name`, `class` (8/9/10), `board` (`CBSE`/`UP`), `academic_year`, `subjects[]` |
+| `profiles` | `user_id`, `role` (`admin`/`teacher`/`parent`), `full_name`, `phone_enc`, `active` |
+| `batches` | `name`, `class`, `board` (`CBSE`/`UP`), `academic_year` |
 | `teacher_batches` | `teacher_id`, `batch_id`, `subject` |
-| `students` | `full_name`, `class`, `board`, `school`, `roll_no`, `batch_id`, `pseudonym` (e.g. `S-1042`, the only identifier sent to the AI), `guardian_name`, `guardian_phone_enc`, `guardian_email_enc`, `status` (`active`/`deleted`) |
+| `students` | `full_name`, `class`, `section`, `board`, `school`, `roll_no`, `batch_id`, `pronoun` (`he`/`she`/`they`, used in report wording), `pseudonym` (`S-1042`, the only identity sent to the AI), `guardian_name`, `guardian_phone_enc`, `guardian_email_enc`, `status` |
 | `parent_links` | `parent_user_id`, `student_id` |
+| `consents` | `student_id`, `guardian_name`, `relation`, `method`, `notice_version`, `purposes[]`, `evidence_file`, `given_at`, `withdrawn_at` |
+| `deletion_requests` | `student_id`, `requested_by`, `status`, `completed_at` |
+| `audit_log` | `actor_id`, `action`, `entity`, `entity_id`, `at` |
 
-### Consent & compliance (DPDP)
+### Papers and answers
 | Table | Key columns |
 |---|---|
-| `consents` | `student_id`, `guardian_name`, `relation`, `method` (signed form upload / email OTP / in-person), `notice_version`, `purposes[]`, `evidence_file`, `given_at`, `withdrawn_at` |
-| `deletion_requests` | `student_id`, `requested_by`, `reason`, `status`, `completed_at` |
-| `audit_log` | `actor_id`, `action` (view/edit/export/share/delete), `entity`, `entity_id`, `at`, `ip` |
+| `papers` | `subject`, `class`, `board`, `title` ("DPS GBN Half-Yearly Set C"), `kind` (`school_exam`/`diagnostic`/`confirmation`/`final_test`/`other`), `total_marks`, `duration_min`, `paper_file`, `generated_from_case_id` (when SEVEN generated it) |
+| `paper_questions` | `paper_id`, `q_no` ("Q37(iii)", "A18"), `section`, `text`, `max_marks`, `concept_ids[]`, `class_level` (for confirmation papers), `answer`, `mirrors_question_id` (final test ↔ original) |
+| `attempts` | `paper_id`, `student_id`, `case_id`, `source` (`scan`/`marksheet`/`bulk`), `files[]`, `status` |
+| `responses` | `attempt_id`, `question_id`, `transcription`, `marks`, `outcome` (`right`/`wrong`/`partial`/`blank`), `error_types[]`, `note`, `illegible` |
 
-### Tests & answers
+### Diagnostic cases and outputs
 | Table | Key columns |
 |---|---|
-| `tests` | `subject`, `class`, `board`, `title`, `test_date`, `total_marks`, `paper_file`, `paper_text`, `answer_key_source` (`uploaded`/`ai_generated`/`none`), `answer_key_file` |
-| `test_questions` | `test_id`, `q_no` ("Q7b"), `section`, `text`, `max_marks`, `chapter_ref`, `concept_ids[]`, `answer_key` |
-| `attempts` | `test_id`, `student_id`, `source` (`scan`/`marksheet`/`bulk`), `files[]`, `status` (`uploaded`→`reading`→`transcript_review`→`analysing`→`needs_review`→`approved`→`shared`, or `failed`), `difficult` (bool) |
-| `responses` | `attempt_id`, `question_id`, `transcription`, `marks_awarded`, `outcome` (`right`/`wrong`/`partial`/`not_attempted`), `error_types[]`, `concept_ids[]`. Filled from the report so that batch insights and progress charts are simple queries. |
+| `cases` | `student_id`, `subject`, `opened_by`, `status` (`collecting`→`analysing`→`confirming`→`remediating`→`final_test`→`closed`), `difficult`, `baseline_pct`, `final_pct` |
+| `findings` | `case_id`, `kind` (`recurring`/`fixed`/`single_paper`), `title` ("The Missing ± Root"), `fix_type` (`one_lesson`/`weeks_practice`/`pattern_recognition`), `evidence` jsonb, `weak_area_id` |
+| `weak_areas` | `case_id`, `title`, `predicted_break_concept_id`, `confirmed_break_concept_id`, `start_step_id` |
+| `case_outputs` | `case_id`, `step` (`analysis`/`tracing`/`confirmation`/`workbook`/`plan`/`diagnostic_test`), `version`, `json`, `status` (`draft`/`approved`), `edited`, `approved_by` |
+| `documents` | `case_id`, `type` (`mistakes_report`/`teacher_pack`/`workbook`/`diagnostic_paper`/`confirmation_paper_student`/`final_test_student`/`parent_summary`), `version`, `pdf_file` |
+| `ai_runs` | `case_id`, `step`, `model`, input/output/cache-read/cache-write tokens, `cost_usd`, `duration_ms`, `stop_reason`, `error` |
+| `shares` | `document_id`, `channel`, `recipient_enc`, `token`, `expires_at`, `first_viewed_at` |
 
-### Reports & AI
+### Libraries (reference data)
 | Table | Key columns |
 |---|---|
-| `reports` | `attempt_id`, `version`, `schema_version`, `report_json` (jsonb), `status` (`draft`/`approved`/`withdrawn`), `edited_by_teacher` (bool), `approved_by`, `approved_at`, `pdf_file` |
-| `report_versions` | full JSON snapshot per edit, for the audit trail and undo |
-| `ai_runs` | `attempt_id`, `step` (`read`/`analyse`/`paper`/`plan`), `model`, `input_tokens`, `output_tokens`, `cache_read_tokens`, `cache_write_tokens`, `cost_usd`, `duration_ms`, `stop_reason`, `error` |
-| `shares` | `report_id`, `channel` (`whatsapp`/`email`), `recipient_enc`, `token`, `expires_at`, `first_viewed_at` |
-
-### Reference data
-| Table | Key columns |
-|---|---|
-| `concepts` | `id` (e.g. `MATH.8.ALG.IDENTITIES`), `subject`, `class`, `board`, `textbook_edition`, `chapter_no`, `chapter_name`, `concept`, `prerequisite_ids[]` |
-| `settings` | `routine_model`, `difficult_model`, per-model prices, escalation thresholds, branding |
-
-**On textbook editions.** NCERT has replaced the Class 6–8 books (*Ganita Prakash*, *Curiosity*), and chapter numbers changed. A Class 10 student in 2026 studied the *old* Class 8 book. Each concept therefore stores its edition, and the lineage trace cites the edition the student actually studied.
+| `concepts` | `id` (`MATH.8.CH9.IDENTITIES`), `subject`, `class`, `board`, `edition` ("NCERT 2020–25", "Ganita Prakash"), `chapter_no`, `chapter_name`, `concept`, `prerequisite_ids[]` |
+| `workbook_steps` | `concept_ids[]`, `title`, `level_hint`, `content` jsonb (understand / hindi_terms / real_life / examples / practice / watch_out / checkpoint / answers), `status` (`draft`/`approved`), `approved_by`, `times_used` |
+| `question_bank` | `concept_id`, `class_level`, `question`, `answer`, `diagnoses` (what a wrong answer means), `status` |
+| `settings` | models, prices, escalation thresholds, theme colours, logo, address, plan defaults (24 days, 45 min) |
 
 ---
 
-## 3. Report JSON schema
+## 4. JSON schemas (one per step)
 
-Three schemas, one per step; the final report merges them. Every finding carries **evidence** (which questions, what was seen) and a **confidence** level. A `data_gaps` list says where the evidence is too thin to be sure.
+Shared pieces:
 
 ```jsonc
-// ───────── Shared pieces ─────────
-Evidence    = { "question": "Q7b", "observation": "wrote (a+b)² = a²+b²" }
-ConceptRef  = { "concept_id": "MATH.8.ALG.IDENTITIES", "class": 8,
-                "chapter": "Ch 9 Algebraic Expressions and Identities", "edition": "NCERT 2023" }
-Confidence  = "high" | "medium" | "low"
-ErrorType   = "conceptual" | "procedural" | "calculation" | "prerequisite_gap" | "comprehension"
-            | "careless" | "not_attempted"
-            // Physics
-            | "formula_selection" | "unit_conversion" | "numerical_setup"
-            // Chemistry
-            | "equation_balancing" | "formula_writing" | "valency" | "terminology"
-            // Biology
-            | "diagram_labelling" | "process_sequencing"
+Evidence   = { "paper": "half_yearly" | "diagnostic" | "...", "q": "A18", "marks": "0/1",
+               "observation": "agreed sin(A+B) = sin A + sin B; wrote sin 60° = ½" }
+ConceptRef = { "id": "MATH.8.CH9.IDENTITIES", "class": 8, "chapter_no": 9,
+               "chapter": "Algebraic Expressions & Identities", "edition": "NCERT 2020–25" }
+Confidence = "high" | "medium" | "low"
+ErrorType  = conceptual | procedural | calculation | prerequisite_gap | comprehension | careless
+           | not_attempted | formula_selection | unit_conversion | numerical_setup        // Physics
+           | equation_balancing | formula_writing | valency | terminology                 // Chemistry
+           | diagram_labelling | process_sequencing                                       // Biology
+```
 
-// ───────── Step B: analysis ─────────
+**B: `analysis`** (feeds the Conceptual Mistakes Report)
+```jsonc
 {
-  "schema_version": "1.0",
-  "meta": { "student_ref": "S-1042", "class": 10, "board": "CBSE", "subject": "Mathematics",
-            "test_title": "...", "test_date": "2026-10-01", "answer_key_source": "uploaded" },
-
-  "score_summary": {                         // numbers filled by CODE, Claude adds remarks only
-    "total": 38, "max": 80, "percent": 47.5,
-    "by_section": [ { "section": "A", "scored": 12, "max": 20 } ],
-    "by_topic":   [ { "chapter": "Quadratic Equations", "scored": 3, "max": 12 } ],
-    "remark": "..."
-  },
-
-  "questions": [ {
-    "q_no": "Q7b", "max_marks": 4, "marks": 1,
-    "outcome": "partial",                    // right | wrong | partial | not_attempted
-    "student_work_summary": "...",
-    "what_went_wrong": "Expanded (x+3)² as x²+9, so the discriminant came out wrong",
-    "error_types": ["prerequisite_gap", "conceptual"],
-    "concepts": [ConceptRef],
-    "confidence": "high"
-  } ],
-
-  "strength_map": [ { "chapter": "...", "level": "strong" | "average" | "weak",
-                      "evidence": [Evidence] } ],
-
-  "root_cause_traces": [ {
-    "weak_area": "Quadratic equations",
-    "chain": [                               // current class → backwards
-      { "concept": ConceptRef, "status": "weak" | "shaky" | "secure" | "untested",
-        "evidence": [Evidence] }
-    ],
-    "confidence": "medium"
-  } ],
-
-  "break_point": { "class": 8, "concept": ConceptRef,
-                   "explanation": "...", "evidence": [Evidence], "confidence": "medium" },
-
-  "common_roots": [ { "root": ConceptRef, "affects": ["Quadratics", "Algebraic fractions"],
-                      "explanation": "...", "evidence": [Evidence] } ],
-
+  "papers": [ { "key": "diagnostic", "title": "...", "score": "54½/64", "pct": 85 } ],  // scores from code
+  "questions": [ { "paper": "diagnostic", "q": "A9", "outcome": "wrong", "marks": "0/1",
+                   "what_went_wrong": "...", "error_types": ["conceptual"], "concepts": [ConceptRef],
+                   "confidence": "high" } ],
+  "headline": "On standard textbook questions he understands most topics…",
+  "recurring_mistakes": [ {
+      "title": "The Missing ± Root", "one_line": "Only +√k taken; the negative root is never checked.",
+      "student_writes": "x² = 9 ⇒ x = 3", "correct_idea": "x² = 9 ⇒ x = ±3, then check both",
+      "evidence": [Evidence],                // at least one per paper
+      "why_it_happens": "...", "teach_this": "...",
+      "fix_type": "one_lesson" | "weeks_practice" | "pattern_recognition",
+      "error_types": [ErrorType], "confidence": "high" } ],
+  "fixed_mistakes": [ { "concept": "HCF vs LCM", "before": Evidence, "after": Evidence } ],
+  "caution": "Some diagnostic questions were similar to half-yearly ones…",
   "genuine_strengths": [ { "statement": "...", "evidence": [Evidence] } ],
-
   "nature_of_problem": { "primary": "understanding" | "practice" | "carelessness" | "confidence",
-                         "secondary": "...", "explanation": "...", "evidence": [Evidence] },
-
-  "data_gaps": [ "Only one question tested coordinate geometry; cannot judge reliably." ],
-  "escalate_recommended": false
-}
-
-// ───────── Step C: confirmation paper ─────────
-{
-  "papers": [ {
-    "weak_area": "Quadratic equations",
-    "questions": [                           // ordered lowest class → current class
-      { "seq": 1, "class_level": 7, "concept": ConceptRef, "question": "...",
-        "marks": 1, "answer": "...", "what_it_confirms": "..." }
-    ]
-  } ],
-  "instructions_for_teacher": "...",
-  "time_minutes": 40
-}
-// Teacher's copy shows class_level + answers; student's copy hides both (rendering choice).
-
-// ───────── Step D: remedial plan + parent summary ─────────
-{
-  "priorities": [ { "rank": 1, "concept": ConceptRef, "why_first": "..." } ],
-  "weekly_plan": [ { "week": 1, "focus": "...", "activities": ["..."],
-                     "practice": "...", "checkpoint": "..." } ],
-  "teacher_notes": "...",
-  "parent_summary": {
-    "en": { "headline": "...", "strengths": "...", "working_on": "...", "how_to_help": "..." },
-    "hi": { "headline": "...", "strengths": "...", "working_on": "...", "how_to_help": "..." }
-  }
+                         "explanation": "...", "evidence": [Evidence] },
+  "priorities": [ { "rank": 1, "label": "One Lesson", "title": "Trig & ± Root", "what": "..." } ],
+  "check_in_plan": [ { "when": "Week 1", "what": "..." } ],
+  "data_gaps": [ "..." ]
 }
 ```
 
-Once the reference sheet (Aariz Khan, Maths) arrives, field names and section order will be adjusted so the rendered report follows that sheet section by section.
+**C: `tracing`** (Teacher Pack Part A)
+```jsonc
+{
+  "edition_note": "Chapters refer to the NCERT books the student studied (2020–2025 editions)…",
+  "weak_areas": [ {
+      "title": "Brackets and Functions", "fixing": "sin(A ± B) = sin A ± sin B",
+      "sub_skills": [ {
+          "name": "Knowing which operations open a bracket",
+          "chain": [ { "concept": ConceptRef, "note": "(a + b)² ≠ a² + b²", "is_break": true } ]  // Class 10 → down
+      } ],
+      "break_point": { "concept": ConceptRef, "headline": "Class 8 · Ch 9 … carried into Class 9 p(x)",
+                       "weak_evidence": [Evidence], "secure_evidence": [Evidence],
+                       "explanation": "...", "confidence": "medium" } } ],
+  "shared_roots": [ { "root": "Over-spreading…", "weak_areas": [1, 3], "taught_in": [ConceptRef],
+                      "evidence": [Evidence] } ],
+  "biggest_payoff": { "concept": ConceptRef, "why": "..." }
+}
+```
+
+**D: `confirmation`** (Teacher Pack Part B; student copy hides class levels and answers)
+```jsonc
+{
+  "format": { "questions": 43, "sections": 4, "minutes": 90, "how_to_give": "Not for marks…" },
+  "sections": [ { "weak_area": "Brackets and Functions",
+      "items": [ { "q": "A4", "class_level": 8, "concept": ConceptRef, "concept_tested": "Identity (a + b)²",
+                   "question": "Expand (a + b)².", "answer": "a² + 2ab + b²",
+                   "source": "bank" | "generated", "bank_id": "..." } ],
+      "rules": [ { "if_fails": ["A4", "A5"], "break_point": "Class 8 identities", "start_step": "1.2" } ],
+      "prediction": "First errors around A4–A6 (Class 8–9)." } ],
+  "whole_section_correct_rule": "The area is secure…"
+}
+```
+
+**F1: `workbook`** (Student Workbook and Teacher Pack Part C)
+```jsonc
+{
+  "plan": { "days": 24, "minutes_per_day": 45, "day_split": "10 read · 20 practice · 10 checkpoint · 5 correct",
+            "weeks": [ { "title": "Shared roots", "days": [ { "day": 1, "step": "2.1", "task": "Negative × negative" } ] } ] },
+  "parts": [ { "weak_area": "Brackets and Functions", "fixing": "...",
+      "steps": [ { "step": "1.1", "level": 1, "class_band": "Class 6–7",     // class_band: teacher copy only
+                   "title": "When Brackets Open: the Distributive Law",
+                   "library_id": "...",                                      // or null if newly written
+                   "skip": false,                                            // from confirmed break points
+                   "content": { "understand": "...", "hindi_terms": [ { "en": "distributive law", "hi": "वितरण नियम" } ],
+                                "real_life": "...", "examples": [ { "q": "...", "a": "..." } ],
+                                "practice": [ { "q": "...", "a": "..." } ], "watch_out": [ "..." ],
+                                "checkpoint": [ { "q": "...", "a": "..." } ], "pass_mark": 4 } } ] } ]
+}
+```
+
+**F2: `plan`** (final test, improvement, parent summary)
+```jsonc
+{
+  "final_test": { "minutes": 60, "marks": 30,
+      "items": [ { "q": "F5", "marks": 2, "question": "...", "solution": "...",
+                   "mirrors": { "paper": "diagnostic", "q": "A9" } } ] },
+  "baseline": { "matched_marks": "7½/27", "pct": 28, "detail": [Evidence], "target_pct": 70 },
+  "parent_summary": {
+    "en": { "headline": "...", "strengths": "...", "working_on": "...", "how_to_help": "..." },
+    "hi": { "headline": "...", "strengths": "...", "working_on": "...", "how_to_help": "..." } }
+}
+```
+
+**G: `diagnostic_test`**: sections, each question with `targets_finding` and `concept`, an answer key, and a teacher note saying which paper-1 finding each question re-tests.
 
 ---
 
-## 4. Screens
+## 5. Screens
 
-**Everyone**
-1. Login (email + password or OTP)
+**Everyone:** 1. Login
 
 **Teacher**
-2. Dashboard: students list with report status chips; filters for class, subject, batch, status
-3. Student profile: details, consent status, diagnostic history
-4. Add / edit student, including **guardian consent capture** (upload signed form or send an email OTP). Upload is blocked until consent exists.
-5. New diagnostic wizard: ① choose student and test → ② question paper (PDF or typed) → ③ answer sheet (scan/photos) **or** marks sheet → ④ answer key (upload or "let Claude draft it") → ⑤ "difficult case?" toggle → Generate
-6. Transcription check: side-by-side view of the scan and Claude's reading, with fixes for misreads (optional, recommended)
-7. Processing status: live step progress, with retry on failure
-8. **Report review & edit**: every section editable, plus *Approve*, *Re-analyse with deep model*, *Regenerate this section*
-9. Report view / print: branded layout, teacher's or student's copy of the confirmation paper
-10. Share dialog: WhatsApp link, email, link expiry
+2. Dashboard: students and their cases, with stage chips (Collecting · Analysing · Confirming · Remediating · Final test · Closed); filters for class, subject, batch, stage
+3. Student profile: details, pronoun, consent, cases and history
+4. Add / edit student, including **guardian consent capture**. Uploads are blocked until consent exists.
+5. **Case page**, the heart of the app: a timeline of papers and steps, with the next action highlighted
+6. Add paper: question paper (PDF or typed) → answer sheet (scans or photos) **or** marks sheet → answer key (upload or "Claude drafts it")
+7. Transcription check: scan beside Claude's reading, with fixes for misreads
+8. Generate diagnostic test (from paper-1 findings): preview, edit, print
+9. Review & edit: Mistakes Report / Teacher Pack / Workbook, each section editable, with *Approve*, *Regenerate section*, *Re-analyse with deep model*
+10. **Enter confirmation results**: a ✔ / ✘ / ½ grid per question. Break points and levels to skip are suggested automatically for the teacher to confirm.
+11. Enter final-test result: improvement against the baseline
+12. Documents & print: the 4 branded PDFs plus student copies, and the Share dialog
 
 **Admin**
-11. Admin dashboard: reports this month, AI spend, pending reviews
-12. Teachers & users: invite, assign batches, deactivate
-13. Batches & classes
-14. Settings: routine and difficult models, prices, escalation rules, branding (logo, address)
-15. AI usage & cost log: per report, per step, monthly total
-16. Concept map browser: view and correct NCERT/UP Board concept maps
-17. Data requests: deletion requests and consent withdrawals, plus audit log
+13. Admin dashboard: cases this month, AI spend, pending reviews
+14. Teachers & users · 15. Batches
+16. Settings: models, prices, escalation rules, theme colours, logo, address, plan defaults
+17. AI usage & cost log
+18. **Libraries**: concept map, workbook steps, question bank (approve, edit, retire)
+19. Data requests & audit log
 
-**Phase 3**
-18. Bulk upload: Excel template download, upload, row validation, queue
-19. Progress tracking: one student's results over time (score trend, concepts fixed or still weak)
-20. Batch insights: most common weak concepts and shared roots across a batch, with suggested group remedial classes
-21. Parent portal: read-only list of approved reports for their child, in English/Hindi
+**Phase 3:** 20. Bulk upload · 21. Progress over time · 22. Batch insights (most common recurring mistakes and shared roots, suggested group classes) · 23. Parent portal (EN/HI)
 
 ---
 
-## 5. Privacy & DPDP measures
+## 6. Privacy & DPDP measures
 
-* **Verifiable parental consent before any upload.** Students are minors, so the consent notice lists its purpose, the AI processing (Anthropic, outside India), how long data is kept, and how to withdraw consent. The signed record and its evidence are stored in `consents`.
-* **Data minimisation towards the API.** Claude receives the pseudonym (`S-1042`), class, board, subject and the answers. It never receives the name, phone number, address, school or guardian details; those are added only when the PDF is rendered. Teachers are shown a tip to crop or cover the name on a scan before upload.
-* **Anthropic API data** is not used for training by default. Zero-data-retention can be requested from Anthropic if needed.
-* **Encryption.** The database and storage are encrypted at rest by Supabase. Guardian phone and email are additionally encrypted at field level (AES-GCM, key held in environment variables). Scan files sit in private buckets and are reachable only through short-lived signed URLs.
-* **Role-based access** is enforced in the database itself (row-level security), not just in the screens.
-* **Right to erasure.** One admin action deletes a student's scans, reports, PDFs and responses, and keeps only an anonymous audit line plus anonymised cost logs.
-* **Retention.** Scans are auto-deleted N months after the report is approved (admin setting, default 12 months).
-* **Audit log** records every view, edit, export, share and delete.
-* Have a lawyer check the consent notice text against the DPDP Rules before going live.
+* **Verifiable parental consent before any upload.** The notice states the purpose, AI processing by Anthropic outside India, retention and withdrawal. The evidence is stored.
+* **Data minimisation.** Claude receives the pseudonym, class, board, subject, pronoun and answers. It never receives the name, school, roll number, phone or address; these are merged in only when the PDFs are rendered. Teachers get a reminder to cover the name on scans.
+* **Encryption.** The database and storage are encrypted at rest. Guardian contacts are also encrypted at field level. Files sit in private buckets reachable only through short-lived signed links.
+* **Role-based access** is enforced inside the database (row-level security), plus an **audit log** of every view, edit, export, share and delete.
+* **Erasure** of a student's data in one action. Scans are auto-deleted after N months (default 12).
+* Anthropic API data is not used for training by default. Zero-data-retention can be requested.
+* Have a lawyer review the consent notice against the DPDP Rules before launch.
 
 ---
 
-## 6. Monthly API cost estimate (about 200 students)
+## 7. Monthly API cost estimate (about 200 students), revised
 
 Prices per million tokens: Sonnet 5.5 is $2 in and $10 out; Opus 5.5 is $4 in and $20 out. Cache reads cost $0.20 on both.
 
-**Assumed size of one Maths report** with a scanned answer sheet (paper of about 4 pages, answer sheet of about 10 pages):
+**One full case (Maths, two scanned papers, about 30 pages, full pack of about 50 pages):**
 
-| Step | Fresh input | Cached input | Output (incl. thinking) |
+| Step | Fresh input | Cached | Output (incl. thinking) |
 |---|---|---|---|
-| A Read scans | ~38K | — | ~6K |
-| B Analysis | ~15K | ~15K (concept map) | ~12K |
-| C Confirmation paper | ~10K | ~15K | ~7K |
-| D Plan + EN/HI summary | ~8K | ~15K | ~8K |
-| **Total** | **~71K** | **~45K** | **~33K** |
+| A Read 2 papers | ~80K | — | ~12K |
+| B Analyse | ~30K | ~20K | ~14K |
+| C Trace | ~20K | ~20K | ~12K |
+| D Confirmation | ~20K | ~20K | ~10K |
+| F1 Workbook (4 areas) | ~50K | ~40K | ~28K → **~8K once the library is filled** |
+| F2 Final test + parent | ~20K | ~20K | ~8K |
+| G Diagnostic test (optional) | ~15K | ~20K | ~6K |
+| **Total** | **~235K** | **~140K** | **~90K (~70K with library)** |
 
-| Per report | Sonnet 5.5 | Opus 5.5 |
+| Per full case | Sonnet 5.5 | Opus 5.5 |
 |---|---|---|
-| Approx. cost | **≈ $0.48** | **≈ $0.95** |
+| First months (library empty) | ≈ $1.40 | ≈ $2.80 |
+| Library filled | ≈ $1.20 | ≈ $2.40 |
 
-Assumed mix: 80% Sonnet and 20% Opus, plus 20% extra for re-runs. That gives **about $0.70 per report (≈ ₹60)**.
+Assumed mix: 80% Sonnet and 20% Opus, plus 20% extra for re-runs. That gives **≈ $1.90 per full case (≈ ₹165) at first, falling to ≈ $1.60 (≈ ₹140)**.
 
-| Scenario | Reports / month | API cost / month |
+| Scenario | Cases / month | API cost / month |
 |---|---|---|
-| Phase 1: Maths, each student once a month | 200 | **≈ $140 (≈ ₹12,000)** |
-| All 4 subjects, each once a month | 800 | ≈ $560 (≈ ₹48,000) |
-| All 4 subjects, once per term (≈ every 3 months) | ≈ 270 avg | ≈ $190 (≈ ₹16,000) |
-| Marks-sheet upload instead of scans (Step A skipped) | — | about 35% cheaper |
-| Phase 3 bulk uploads via Batch API (half price, results within hours) | — | about 50% cheaper on those |
+| Maths, every student once per term | ≈ 67 | **≈ $110–130 (≈ ₹10–11K)** |
+| Maths, every student once a month | 200 | ≈ $320–380 (≈ ₹28–33K) |
+| All 4 subjects, each once per term | ≈ 270 | ≈ $430–510 (≈ ₹37–44K) |
+| Marks sheets instead of scans | — | about 30% cheaper |
+| Bulk runs via the Batch API | — | about 50% cheaper on those |
 
-These are planning estimates. The real cost per report will appear in the usage log from the first week of Phase 1, and the table will be corrected from those numbers.
+These are planning estimates; real numbers will appear in the usage log from week one. The biggest levers are the scan page count and how quickly the workbook library fills.
 
 ---
 
-## 7. Phases
+## 8. Phases
 
-* **Phase 1 (MVP): Mathematics only.** Single-student upload, Steps A–D, teacher review/approve, branded PDF, usage log, consent capture, admin settings.
-* **Phase 2: Physics, Chemistry, Biology** concept maps, subject-specific error types and report wording.
-* **Phase 3:** bulk Excel upload (Batch API), dashboard filters, progress tracking, batch insights, parent portal, WhatsApp/email sharing at scale.
+* **Phase 1 (MVP): Maths.** Single student, one or two papers, steps A–F, the four branded PDFs plus student copies, teacher review, confirmation-results entry, consent, usage log, libraries (seeded from the Aariz pack after de-identification).
+* **Phase 2:** Physics, Chemistry, Biology: concept maps, subject error types, seeded libraries. Optional step G (diagnostic test generator) if it isn't already in Phase 1.
+* **Phase 3:** bulk upload (Batch API), progress over time, batch insights, parent portal, sharing at scale.
