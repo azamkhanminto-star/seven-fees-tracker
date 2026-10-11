@@ -9,7 +9,7 @@ Key D minor, 120 BPM. Resolves to D major on the logo ("RISE").
              toms join at 10.5 s, hats at 14.5 s, snare roll into 22.5 s
   22.5–25.5  full drive on the dominant (tension) under the 2000+ count
   25.5–27    silence, reverse swell
-  27–30      big hit, D major chord, bells; fade
+  27–30      BASS DROP: 808 bass line, kick, claps, hats under the logo; short fade
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
@@ -81,17 +81,29 @@ swell = pad([50, 54, 57, 62, 66], 1.2, cutoff=3000, attack=1.1)
 pads.add(swell * np.linspace(0, 1, len(swell)) ** 2, 25.8, 0.6)
 fx.add(riser(1.2, 600, 9500), 25.8, 0.5)
 
-# ── 27 s: the reveal, D major
-fx.add(impact(), 27.0, 0.85)
-drums.add(tom(60, 1.2), 27.0, 0.8)
-low.add(braam([26, 38, 45], 2.6), 27.0, 0.6)
-pads.add(pad([38, 50, 54, 57, 62, 66, 69], 3.0, cutoff=3400, attack=0.04), 27.0, 0.7)
+# ── 26.9 s: pitch-falling boom into the drop
+fx.add(sub_drop(1.0), 26.0, 0.55)
+
+# ── 27–30 s: BASS DROP on the logo reveal (D), 808 bass + punchy drums, D major colour on top
+fx.add(impact(1.6), 27.0, 0.6)
+pads.add(pad([50, 54, 57, 62], 3.0, cutoff=2600, attack=0.04), 27.0, 0.32)
 for k, m in enumerate([74, 78, 81, 86]):
-    strings.add(bell(m, 2.6), 27.0 + k * 0.125, 0.6, pan=-0.3 + 0.2 * k)
+    strings.add(bell(m, 2.0), 27.0 + k * 0.125, 0.45, pan=-0.3 + 0.2 * k)
+# 808 line (D2 = 38): rhythm in 16ths, with a jump up to A and back
+BASS_LINE = [(0.0, 38, 0.7), (0.75, 38, 0.25), (1.0, 45, 0.45), (1.5, 38, 0.7), (2.25, 41, 0.25), (2.5, 38, 0.5)]
+for at, m, d in BASS_LINE:
+    low.add(bass808(m, d, glide=12 if at == 0 else 5), 27.0 + at, 0.95)
+for b in range(6):                       # kick on every beat
+    drums.add(kick(1.0), 27.0 + b * 0.5)
+for t in (27.5, 28.5, 29.5):             # claps on 2 and 4
+    drums.add(clap(1.0), t, 0.8)
+for j in range(24):                      # 16th hats, accent on offbeats
+    drums.add(hat(), 27.0 + j * 0.125, 0.45 if j % 2 else 0.22, pan=(0.25 if j % 4 else -0.25))
+drums.add(hat(True), 28.875, 0.4)
 
 # ── mix
 L = drums.L + low.L + strings.L + pads.L + fx.L
 R = drums.R + low.R + strings.R + pads.R + fx.R
 L += reverb(strings.L + pads.L * 0.7 + drums.L * 0.2 + low.L * 0.1)
 R += reverb(strings.R + pads.R * 0.7 + drums.R * 0.2 + low.R * 0.1)
-master(L, R, DUR, "public/music/seven_teaser.wav")
+master(L, R, DUR, "public/music/seven_teaser.wav", fade_out=0.7)

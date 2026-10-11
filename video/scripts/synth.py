@@ -116,3 +116,23 @@ def master(L, R, dur, path, fade_in=0.8, fade_out=1.2):
         w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR)
         w.writeframes((np.stack([L, R], axis=1) * 32767).astype(np.int16).tobytes())
     print(path, f"{dur:.1f}s")
+
+
+def bass808(m, d=0.6, glide=12, drive=2.5):
+    """808-style bass: pitch slides down into the note; saturated so phone speakers still reproduce it."""
+    t = tt(d); f0 = mtof(m)
+    f = f0 * 2 ** (glide / 12 * np.exp(-t * 60))
+    x = np.sin(2 * np.pi * np.cumsum(f) / SR)
+    x = np.tanh(drive * x) / np.tanh(drive)          # harmonics an earpiece can play
+    return x * np.minimum(1, t / 0.003) * np.exp(-t * 2.2) * np.clip((d - t) / 0.04, 0, 1)
+
+def clap(level=1.0):
+    d = 0.3; t = tt(d); n = rng.standard_normal(len(t))
+    e = np.exp(-t * 22) + 0.6 * np.exp(-np.maximum(0, t - 0.012) * 30) * (t > 0.012) + 0.4 * np.exp(-np.maximum(0, t - 0.024) * 26) * (t > 0.024)
+    return bp(n, 900, 3200) * e * 0.7 * level
+
+def sub_drop(d=1.0, f_hi=180, f_lo=40):
+    """Pitch-falling boom that sweeps down into a drop."""
+    t = tt(d); f = f_lo + (f_hi - f_lo) * (1 - t / d) ** 2
+    x = np.sin(2 * np.pi * np.cumsum(f) / SR)
+    return np.tanh(1.8 * x) * np.minimum(1, t / 0.05) * (t / d) ** 0.3
