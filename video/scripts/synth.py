@@ -136,3 +136,58 @@ def sub_drop(d=1.0, f_hi=180, f_lo=40):
     t = tt(d); f = f_lo + (f_hi - f_lo) * (1 - t / d) ** 2
     x = np.sin(2 * np.pi * np.cumsum(f) / SR)
     return np.tanh(1.8 * x) * np.minimum(1, t / 0.05) * (t / d) ** 0.3
+
+
+# ── instruments for the alternative endings ──────────────────────────────
+def piano(m, d=1.8, vel=1.0):
+    """Soft piano-like tone: decaying harmonics, slightly brighter attack."""
+    t = tt(d); f = mtof(m); x = np.zeros(len(t))
+    for k, a in enumerate([1.0, 0.5, 0.28, 0.16, 0.09, 0.05], start=1):
+        x += a * np.sin(2 * np.pi * f * k * t * (1 + 0.0004 * k * k)) * np.exp(-t * (1.4 + 0.9 * k))
+    return x * np.minimum(1, t / 0.004) * 0.22 * vel
+
+def choir(notes, d, vowel=(700, 1150), attack=0.4):
+    """Choir-like 'ah': detuned saws through two formant band-passes."""
+    t = tt(d); x = np.zeros(len(t))
+    for m in notes:
+        for det in (-0.15, -0.05, 0.05, 0.15):
+            vib = 1 + 0.004 * np.sin(2 * np.pi * (5 + det) * t)
+            x += 2 * ((np.cumsum(mtof(m) * 2 ** (det / 12) * vib) / SR + rng.random()) % 1.0) - 1
+    x /= len(notes) * 4
+    y = bp(x, vowel[0] * 0.75, vowel[0] * 1.3) + 0.7 * bp(x, vowel[1] * 0.8, vowel[1] * 1.25) + 0.25 * lp(x, 500)
+    return y * np.minimum(1, t / attack) * np.clip((d - t) / 0.6, 0, 1) * 1.6
+
+def timpani(m=38, d=1.6, vel=1.0):
+    t = tt(d); f = mtof(m) * (1 + 0.08 * np.exp(-t * 10))
+    x = np.sin(2 * np.pi * np.cumsum(f) / SR) + 0.4 * np.sin(2 * np.pi * np.cumsum(f * 1.5) / SR) * np.exp(-t * 3)
+    x += lp(rng.standard_normal(len(t)), 600) * np.exp(-t * 30) * 0.5
+    return np.tanh(1.4 * x * np.exp(-t * 2.2)) * vel
+
+def dhol(kind="dha", vel=1.0):
+    """'dha' = deep bass side with pitch bend; 'ta' = sharp treble slap."""
+    if kind == "dha":
+        d = 0.5; t = tt(d); f = 70 * (1 + 0.7 * np.exp(-t * 14))
+        x = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 6.5) + bp(rng.standard_normal(len(t)), 120, 700) * np.exp(-t * 40) * 0.3
+        return np.tanh(1.8 * x) * vel
+    d = 0.18; t = tt(d)
+    x = bp(rng.standard_normal(len(t)), 1800, 6000) * np.exp(-t * 45) + np.sin(2 * np.pi * 520 * t) * np.exp(-t * 35) * 0.5
+    return x * 0.7 * vel
+
+def tabla(kind="na", vel=1.0):
+    """'na' = ringing treble stroke; 'ge' = bass stroke that glides up."""
+    if kind == "na":
+        d = 0.35; t = tt(d)
+        x = np.sin(2 * np.pi * 440 * t) * np.exp(-t * 9) + 0.4 * np.sin(2 * np.pi * 1320 * t) * np.exp(-t * 20)
+        return x * 0.45 * vel + bp(rng.standard_normal(len(t)), 2000, 6000) * np.exp(-t * 80) * 0.2 * vel
+    d = 0.45; t = tt(d); f = 95 * (1 + 0.25 * (1 - np.exp(-t * 8)))
+    return np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 5) * 0.8 * vel
+
+def sitar(m, d=0.6, bend=0.0):
+    """Sitar-like pluck: bright buzzy saw, small pitch bend, sympathetic shimmer."""
+    t = tt(d); f = mtof(m) * 2 ** (bend * (1 - np.exp(-t * 12)) / 12)
+    ph = np.cumsum(f) / SR
+    x = 2 * (ph % 1.0) - 1
+    x = x + 0.35 * np.sign(np.sin(2 * np.pi * ph * 2)) * np.exp(-t * 18)        # jawari buzz
+    x = bp(x, 400, 5000) * np.minimum(1, t / 0.002) * np.exp(-t * 4.5)
+    shimmer = 0.12 * np.sin(2 * np.pi * mtof(m + 12) * t) * np.exp(-t * 2)
+    return (x * 0.3 + shimmer)
