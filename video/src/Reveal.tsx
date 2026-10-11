@@ -15,11 +15,12 @@ const toScreen = ([x1, y1, x2, y2]: number[]) => ({
   left: LOGO_LEFT + (x1 - VX) * S, top: LOGO_TOP + (y1 - VY) * S, width: (x2 - x1) * S, height: (y2 - y1) * S,
 });
 
-export function Reveal() {
+/** Bars sweep in, slide into the logo's four bars, the tick draws as the V, SEVEN completes around it. */
+export function LogoAssembly({ bars }: { bars: readonly { color: string; soft: string }[] }) {
   const frame = useCurrentFrame();
   const L = logo.onTeal;
 
-  // 1 · subject bars sweep in, then slide into the logo's four bars
+  // 1 · bars sweep in, then slide into the logo's four bars
   const enter = ease(frame, [0, 12], [0, 1]);
   const merge = ease(frame, [10, 30], [0, 1], EASE_IN_OUT);
   // 2 · tick draws itself as the V
@@ -42,34 +43,41 @@ export function Reveal() {
     g(L.tagline, `opacity:${tagline};transform:translateY(${(1 - tagline) * 6}px)`),
   ].join("");
 
-  const t = TEXT.reveal;
   return (
-    <AbsoluteFill>
-      <Background />
-      <AmbientStreaks seed={6} intensity={0.22} />
-      <Streak color={COLORS.yellow} y={1500} start={48} duration={30} angle={-8} length={900} thickness={12} intensity={0.8} />
-
-      {/* moving subject bars */}
-      {SUBJECTS.map((s, i) => {
+    <>
+      {bars.map((s, i) => {
         const from = { left: 140, top: 760 + i * 74, width: 800, height: 26 };
         const to = toScreen(L.barBoxes[i]);
         const lerp = (a: number, b: number) => a + (b - a) * merge;
         const color = interpolateColors(merge, [0, 1], [s.color, s.soft]);
         return (
-          <div key={s.name} style={{
+          <div key={i} style={{
             position: "absolute", left: lerp(from.left, to.left) + (1 - enter) * -1100 * (i % 2 ? -1 : 1), top: lerp(from.top, to.top),
             width: lerp(from.width, to.width), height: lerp(from.height, to.height), borderRadius: 999, background: color,
             boxShadow: `0 0 ${24 * (1 - merge) + 6}px ${alpha(s.color, 0.6 * (1 - merge))}`, opacity: 1 - handover,
           }} />
         );
       })}
-
       {/* the logo itself (exact vectors from the PDF) */}
       <svg viewBox={logo.viewBox.join(" ")} width={LOGO_W} height={LOGO_H} style={{ position: "absolute", left: LOGO_LEFT, top: LOGO_TOP, overflow: "visible" }}
         dangerouslySetInnerHTML={{ __html: svg }} />
+    </>
+  );
+}
 
+export const LOGO_BOTTOM = LOGO_TOP + LOGO_H;
+
+export function Reveal() {
+  const frame = useCurrentFrame();
+  const t = TEXT.reveal;
+  return (
+    <AbsoluteFill>
+      <Background />
+      <AmbientStreaks seed={6} intensity={0.22} />
+      <Streak color={COLORS.yellow} y={1500} start={48} duration={30} angle={-8} length={900} thickness={12} intensity={0.8} />
+      <LogoAssembly bars={SUBJECTS} />
       {/* product line and address */}
-      <div style={{ position: "absolute", top: LOGO_TOP + LOGO_H + 120, width: VIDEO.width, display: "flex", flexDirection: "column", alignItems: "center", gap: 26 }}>
+      <div style={{ position: "absolute", top: LOGO_BOTTOM + 120, width: VIDEO.width, display: "flex", flexDirection: "column", alignItems: "center", gap: 26 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 22, opacity: ease(frame, [54, 66], [0, 1]), transform: `translateY(${(1 - ease(frame, [54, 66], [0, 1])) * 40}px)` }}>
           <span style={{ fontFamily: FONT, fontWeight: 700, fontSize: 104, color: COLORS.yellow, textShadow: `0 0 30px ${alpha(COLORS.yellow, 0.45)}` }}>{t.product}</span>
           <span style={{ fontFamily: FONT, fontWeight: 500, fontSize: 56, color: COLORS.white }}>— {t.productRest}</span>
