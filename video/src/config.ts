@@ -87,8 +87,8 @@ export const TEXT = {
 
 /** Sound. Put a royalty-free track in public/ and set `music` to its file name to use it. */
 export const AUDIO = {
-  music: null as string | null, // e.g. "music.mp3"
-  musicVolume: 0.35,
+  music: "music/rdt_theme.wav" as string | null, // original track made by scripts/compose-music.py; or your own file in public/
+  musicVolume: 0.6,
   effectsVolume: 0.8,
   /** Effect cues: [second, file in public/sfx]. */
   cues: [
