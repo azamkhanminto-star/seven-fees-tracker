@@ -7,18 +7,18 @@ import { COLORS } from "../config";
 
 export const T_DURATION = 50; // seconds
 
-/** Scene start and end, in seconds. */
+/** Scene start and end, in seconds. Every scene is two bars of the 96 BPM music (5 s), so each cut lands on a downbeat. */
 export const T_SCENES = {
-  intro: { from: 0, to: 4 },
-  feel: { from: 4, to: 9 },
-  usp1: { from: 9, to: 15 },
-  usp2: { from: 15, to: 21 },
-  usp3: { from: 21, to: 27 },
-  usp4: { from: 27, to: 33 },
-  stat: { from: 33, to: 37 },
-  courses: { from: 37, to: 42 },
-  cta: { from: 42, to: 46 },
-  reveal: { from: 46, to: 50 },
+  intro: { from: 0, to: 5 },
+  feel: { from: 5, to: 10 },
+  usp1: { from: 10, to: 15 },
+  usp2: { from: 15, to: 20 },
+  usp3: { from: 20, to: 25 },
+  usp4: { from: 25, to: 30 },
+  stat: { from: 30, to: 35 },
+  courses: { from: 35, to: 40 },
+  cta: { from: 40, to: 45 },
+  reveal: { from: 45, to: 50 },
 };
 
 /**
@@ -63,29 +63,26 @@ export const T_TEXT = {
   },
 };
 
-/** Beat sync for the visuals. Must match scripts/compose-reel-music.py (120 BPM pulse, hits on cuts). */
+/** Beat sync for the visuals. Must match scripts/compose-reel-indie.py (96 BPM, a bar every 2.5 s). */
 export const T_BEAT = {
-  from: 4, to: 45.5, every: 0.5,                              // the zoom "breathes" on every beat
-  hits: [4, 6.25, 9, 15, 21, 27, 33, 37, 42, 42.87, 46, 47.5], // a light flash on every music hit
+  from: 5, to: 44.375, every: 60 / 96,                          // the picture "breathes" on every beat
+  hits: [5, 7.5, 10, 15, 20, 25, 30, 35, 40, 45],                    // a light flash on every scene cut (downbeats)
 };
 
 export const T_AUDIO = {
-  music: "music/seven_reel_pulse.wav" as string | null, // made by scripts/compose-reel-music.py
+  music: "music/seven_reel_indie.wav" as string | null, // made by scripts/compose-reel-indie.py
   musicVolume: 0.6,
-  effectsVolume: 0.5,
+  effectsVolume: 0.4,
   cues: [
-    [0.2, "whoosh.wav"],
     [0.8, "pop.wav"],
-    [4.0, "whoosh.wav"],
-    [6.5, "click.wav"],
-    [9.0, "whoosh.wav"], [9.7, "pop.wav"],
+    [5.0, "whoosh.wav"],
+    [10.0, "whoosh.wav"], [10.7, "pop.wav"],
     [15.0, "whoosh.wav"], [15.7, "pop.wav"],
-    [21.0, "whoosh.wav"], [21.7, "pop.wav"],
-    [27.0, "whoosh.wav"], [27.7, "pop.wav"],
-    [33.0, "whoosh.wav"],
-    [37.0, "whoosh.wav"],
-    [42.0, "whoosh.wav"], [42.9, "pop.wav"],
-    [46.0, "whoosh.wav"],
-    [47.0, "reveal.wav"],
+    [20.0, "whoosh.wav"], [20.7, "pop.wav"],
+    [25.0, "whoosh.wav"], [25.7, "pop.wav"],
+    [30.0, "whoosh.wav"],
+    [35.0, "whoosh.wav"],
+    [40.0, "whoosh.wav"], [40.9, "pop.wav"],
+    [46.0, "reveal.wav"],
   ] as [number, string][],
 };

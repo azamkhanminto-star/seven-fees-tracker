@@ -61,7 +61,7 @@ function Intro({ duration }: { duration: number }) {
 function Feel({ duration }: { duration: number }) {
   const frame = useCurrentFrame();
   const t = T_TEXT.feel;
-  const half = Math.round(duration * 0.45);           // first thought, then the reveal of the system
+  const half = Math.round(duration * 0.5);            // first thought, then the reveal of the system (on the bar line)
   const first = 1 - ease(frame, [half - 8, half], [0, 1], EASE_IN);
   const glow = ease(frame, [half + 26, half + 50], [0, 1]);
   const underline = ease(frame, [half + 30, half + 52], [0, 1]);
