@@ -63,10 +63,16 @@ export const T_TEXT = {
   },
 };
 
+/** Beat sync for the visuals. Must match scripts/compose-reel-music.py (120 BPM pulse, hits on cuts). */
+export const T_BEAT = {
+  from: 4, to: 45.5, every: 0.5,                              // the zoom "breathes" on every beat
+  hits: [4, 6.25, 9, 15, 21, 27, 33, 37, 42, 42.87, 46, 47.5], // a light flash on every music hit
+};
+
 export const T_AUDIO = {
-  music: "music/seven_teaser.wav" as string | null, // made by scripts/compose-teaser-music.py
+  music: "music/seven_reel_pulse.wav" as string | null, // made by scripts/compose-reel-music.py
   musicVolume: 0.6,
-  effectsVolume: 0.75,
+  effectsVolume: 0.5,
   cues: [
     [0.2, "whoosh.wav"],
     [0.8, "pop.wav"],

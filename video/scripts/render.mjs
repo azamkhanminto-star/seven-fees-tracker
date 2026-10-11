@@ -16,7 +16,7 @@ await renderMedia({
 // Bring the sound to the usual social-video loudness (−14 LUFS), video stream copied untouched.
 try {
   const tmp = out.replace(".mp4", ".tmp.mp4");
-  execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", out, "-t", String(composition.durationInFrames / composition.fps), "-c:v", "copy", "-af", "loudnorm=I=-14:TP=-2:LRA=11", "-ar", "48000", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", tmp]);
+  execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", out, "-t", String(composition.durationInFrames / composition.fps), "-c:v", "copy", "-af", "loudnorm=I=-14:TP=-2:LRA=11,aresample=48000,alimiter=limit=0.63:attack=2:level=false", "-ar", "48000", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", tmp]);
   fs.renameSync(tmp, out);
   console.log("\nloudness normalised to -14 LUFS");
 } catch {

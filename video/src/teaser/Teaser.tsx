@@ -1,9 +1,9 @@
 import React from "react";
-import { AbsoluteFill, Audio, Sequence, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, Audio, random, Sequence, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, VIDEO } from "../config";
 import { alpha, AmbientStreaks, Background, ease, EASE_IN, EASE_IN_OUT, FONT, KineticLine, Streak, useFonts } from "../lib";
 import { LOGO_BOTTOM, LogoAssembly } from "../Reveal";
-import { T_AUDIO, T_SCENES, T_TEXT, USPS } from "./config";
+import { T_AUDIO, T_BEAT, T_SCENES, T_TEXT, USPS } from "./config";
 
 const W = VIDEO.width;
 const TOP = VIDEO.safeTop;
@@ -257,6 +257,49 @@ function TeaserReveal() {
   );
 }
 
+// ───────────────────────── engagement layers (in sync with the music) ─────────────────────────
+/** Twinkling star field: small white and yellow dots, each with its own slow twinkle. */
+const STARS = Array.from({ length: 70 }, (_, i) => ({
+  x: random(`sx${i}`) * W, y: 120 + random(`sy${i}`) * (VIDEO.height - 240), r: 2 + random(`sr${i}`) * 4,
+  speed: 0.04 + random(`sp${i}`) * 0.08, phase: random(`ph${i}`) * Math.PI * 2, yellow: random(`c${i}`) < 0.25,
+}));
+
+function Stars() {
+  const frame = useCurrentFrame();
+  return (
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
+      {STARS.map((s, i) => {
+        const tw = 0.25 + 0.55 * (0.5 + 0.5 * Math.sin(frame * s.speed + s.phase));
+        const c = s.yellow ? COLORS.yellow : COLORS.white;
+        return <div key={i} style={{ position: "absolute", left: s.x, top: s.y - frame * 0.15, width: s.r, height: s.r, borderRadius: s.r,
+          background: c, opacity: tw, boxShadow: `0 0 ${s.r * 3}px ${alpha(c, 0.8)}` }} />;
+      })}
+    </AbsoluteFill>
+  );
+}
+
+/** The picture "breathes" on every music beat: a quick, eased 1% push-in that settles. */
+function useBeatZoom() {
+  const frame = useCurrentFrame();
+  const t = frame / VIDEO.fps;
+  if (t < T_BEAT.from || t >= T_BEAT.to) return 1;
+  const since = ((t - T_BEAT.from) % T_BEAT.every) * VIDEO.fps;          // frames since the last beat
+  const grow = (t - T_BEAT.from) / (T_BEAT.to - T_BEAT.from);            // stronger as the music builds
+  const punch = since < 2 ? ease(since, [0, 2], [0, 1]) : Math.exp(-(since - 2) / 3);
+  return 1 + (0.006 + 0.008 * grow) * punch;
+}
+
+/** A soft light flash on every music hit (the scene cuts). */
+function CutFlash() {
+  const frame = useCurrentFrame();
+  let o = 0;
+  for (const h of T_BEAT.hits) {
+    const d = frame - f(h);
+    if (d >= -1 && d < 10) o = Math.max(o, d < 1 ? ease(d, [-1, 1], [0, 1]) * 0.32 : 0.32 * (1 - ease(d, [1, 10], [0, 1])));
+  }
+  return o > 0 ? <AbsoluteFill style={{ background: COLORS.white, opacity: o, mixBlendMode: "screen", pointerEvents: "none" }} /> : null;
+}
+
 // ───────────────────────── timeline ─────────────────────────
 export function SevenTeaser() {
   useFonts();
@@ -265,8 +308,10 @@ export function SevenTeaser() {
     const d = f(to) - f(from);
     return <Sequence key={key} from={f(from)} durationInFrames={d} name={key}>{node(d)}</Sequence>;
   };
+  const zoom = useBeatZoom();
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.ink }}>
+      <AbsoluteFill style={{ transform: `scale(${zoom})` }}>
       {seq("intro", (d) => <Intro duration={d} />)}
       {seq("feel", (d) => <Feel duration={d} />)}
       {seq("usp1", (d) => <UspScene index={0} duration={d} />)}
@@ -277,6 +322,9 @@ export function SevenTeaser() {
       {seq("courses", (d) => <Courses duration={d} />)}
       {seq("cta", (d) => <Cta duration={d} />)}
       {seq("reveal", () => <TeaserReveal />)}
+      <Stars />
+      </AbsoluteFill>
+      <CutFlash />
       {T_AUDIO.music ? <Audio src={staticFile(T_AUDIO.music)} volume={T_AUDIO.musicVolume} /> : null}
       {T_AUDIO.cues.map(([sec, file], i) => (
         <Sequence key={i} from={f(sec)} durationInFrames={f(3)} name={`sfx ${file}`}>
