@@ -36,44 +36,58 @@ function Icon({ name, color, progress, size = 300 }: { name: string; color: stri
   );
 }
 
-// ───────────────────────── 0–3.5 s · Intro ─────────────────────────
+// ───────────────────────── Intro · "Hey Aligarh!" ─────────────────────────
 function Intro({ duration }: { duration: number }) {
   const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
   const t = T_TEXT.intro;
+  const hey = spring({ frame: frame - 12, fps, config: { damping: 11, stiffness: 180, mass: 0.7 } });
   return (
     <AbsoluteFill>
       <Background inkCover={1 - ease(frame, [0, 40], [0, 1], EASE_IN_OUT)} />
       {USPS.map((u, i) => <Streak key={i} color={u.color} y={560 + i * 220} start={6 + i * 6} duration={36} angle={-14} length={880} thickness={14} />)}
-      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", gap: 6, opacity: useExit(duration) }}>
-        <KineticLine words={[t.line1]} start={14} size={92} weight={500} color={COLORS.yellow} />
-        <KineticLine words={t.line2.split(" ")} start={24} size={104} />
-        <KineticLine words={t.line3.split(" ")} start={34} size={104} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", gap: 10, opacity: useExit(duration) }}>
+        <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 132, color: COLORS.yellow, letterSpacing: "-0.01em",
+          transform: `scale(${0.6 + 0.4 * hey}) rotate(${(1 - hey) * -6}deg)`, opacity: Math.min(1, hey * 1.5),
+          textShadow: `0 0 40px ${alpha(COLORS.yellow, 0.45)}` }}>{t.hey}</div>
+        <KineticLine words={t.line2.split(" ")} start={40} size={100} />
+        <KineticLine words={t.line3.split(" ")} start={50} size={100} weight={500} />
       </AbsoluteFill>
     </AbsoluteFill>
   );
 }
 
-// ───────────────────────── 3.5–6.5 s · Promise ─────────────────────────
-function Promise_({ duration }: { duration: number }) {
+// ───────────────────────── The feeling · "a system you've never seen before" ─────────────────────────
+function Feel({ duration }: { duration: number }) {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const t = T_TEXT.promise;
-  const snap = spring({ frame: frame - 4, fps, config: { damping: 14, stiffness: 200, mass: 0.7 } });
+  const t = T_TEXT.feel;
+  const half = Math.round(duration * 0.45);           // first thought, then the reveal of the system
+  const first = 1 - ease(frame, [half - 8, half], [0, 1], EASE_IN);
+  const glow = ease(frame, [half + 26, half + 50], [0, 1]);
+  const underline = ease(frame, [half + 30, half + 52], [0, 1]);
+  const exit = useExit(duration);   // hooks must run on every frame, not inside a branch
   return (
     <AbsoluteFill>
       <Background />
       <AmbientStreaks seed={8} intensity={0.35} />
-      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", gap: 22, opacity: useExit(duration) }}>
-        <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 132, color: COLORS.white, letterSpacing: "-0.02em",
-          transform: `scale(${1.25 - 0.25 * snap})`, opacity: Math.min(1, snap * 1.5) }}>{t.line1}</div>
-        <KineticLine words={t.line2.split(" ")} start={16} size={92} weight={500} color={COLORS.yellow} />
-        <div style={{ width: ease(frame, [24, 44], [0, 520]), height: 12, borderRadius: 12, background: COLORS.yellow, boxShadow: `0 0 24px ${alpha(COLORS.yellow, 0.6)}` }} />
-      </AbsoluteFill>
+      {frame < half ? (
+        <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", gap: 4, opacity: first }}>
+          <KineticLine words={t.line1.split(" ")} start={4} size={104} weight={500} />
+          <KineticLine words={t.line1b.split(" ")} start={14} size={116} />
+        </AbsoluteFill>
+      ) : (
+        <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", gap: 14, opacity: exit }}>
+          <KineticLine words={t.line2.split(" ")} start={half + 2} size={84} weight={500} />
+          <KineticLine words={t.glow.split(" ")} start={half + 14} size={104} color={COLORS.yellow}
+            style={{ textShadow: `0 0 ${50 * glow}px ${alpha(COLORS.yellow, 0.55)}`, maxWidth: 900 }} />
+          <div style={{ width: underline * 560, height: 12, borderRadius: 12, background: COLORS.yellow, boxShadow: `0 0 24px ${alpha(COLORS.yellow, 0.6)}` }} />
+        </AbsoluteFill>
+      )}
     </AbsoluteFill>
   );
 }
 
-// ───────────────────────── 6.5–22.5 s · the four USPs ─────────────────────────
+// ───────────────────────── the four USPs ─────────────────────────
 function UspScene({ index, duration }: { index: number; duration: number }) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -99,19 +113,33 @@ function UspScene({ index, duration }: { index: number; duration: number }) {
           <span style={{ fontFamily: FONT, fontWeight: 500, fontSize: 52, color: alpha(COLORS.white, 0.7) }}>/ 04</span>
         </div>
         {/* icon in a glowing ring */}
-        <div style={{ position: "absolute", top: 560, left: (W - 420) / 2, width: 420, height: 420, borderRadius: 420, border: `10px solid ${u.color}`,
+        <div style={{ position: "absolute", top: 470, left: (W - 380) / 2, width: 380, height: 380, borderRadius: 380, border: `10px solid ${u.color}`,
           background: alpha(COLORS.ink, 0.25), display: "flex", alignItems: "center", justifyContent: "center",
           transform: `scale(${ring})`, boxShadow: `0 0 60px ${alpha(u.color, 0.45)}, inset 0 0 40px ${alpha(u.color, 0.25)}` }}>
-          <Icon name={u.icon} color={COLORS.white} progress={draw} size={260} />
+          <Icon name={u.icon} color={COLORS.white} progress={draw} size={230} />
         </div>
         {/* title and line */}
-        <div style={{ position: "absolute", top: 1060, left: 60, right: 60, display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
-          <KineticLine words={u.title.split(" ")} start={14} size={88} stagger={3} />
+        <div style={{ position: "absolute", top: 905, left: 50, right: 50, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+          <KineticLine words={u.title.split(" ")} start={14} size={84} stagger={3} />
           <div style={{ width: ease(frame, [22, 40], [0, 300]), height: 12, borderRadius: 12, background: u.color, boxShadow: `0 0 20px ${alpha(u.color, 0.6)}` }} />
-          <KineticLine words={u.line.split(" ")} start={26} size={56} weight={500} stagger={2} />
+          <KineticLine words={u.line.split(" ")} start={26} size={54} weight={500} stagger={2} />
+          {/* points from the brochure */}
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 16, marginTop: 22, maxWidth: 940 }}>
+            {u.points.map((pt, i) => {
+              const p = spring({ frame: frame - (58 + i * 14), fps, config: { damping: 13, stiffness: 170, mass: 0.7 } });
+              return (
+                <div key={pt} style={{ display: "flex", alignItems: "center", gap: 14, fontFamily: FONT, fontWeight: 500, fontSize: 48, color: COLORS.white,
+                  background: alpha(COLORS.ink, 0.35), border: `3px solid ${u.color}`, borderRadius: 999, padding: "10px 28px",
+                  opacity: Math.min(1, p * 1.5), transform: `translateY(${(1 - p) * 40}px) scale(${0.85 + 0.15 * p})` }}>
+                  {index === 0 ? <span style={{ fontWeight: 700, color: u.color }}>{i + 1}</span> : <span style={{ width: 14, height: 14, borderRadius: 14, background: u.color }} />}
+                  {pt}
+                </div>
+              );
+            })}
+          </div>
         </div>
         {/* progress: four pills */}
-        <div style={{ position: "absolute", top: 1530, width: W, display: "flex", justifyContent: "center", gap: 16 }}>
+        <div style={{ position: "absolute", top: 1585, width: W, display: "flex", justifyContent: "center", gap: 16 }}>
           {USPS.map((x, i) => (
             <div key={i} style={{ width: i === index ? 120 : 60, height: 16, borderRadius: 16, background: i <= index ? x.color : alpha(COLORS.white, 0.18) }} />
           ))}
@@ -121,7 +149,7 @@ function UspScene({ index, duration }: { index: number; duration: number }) {
   );
 }
 
-// ───────────────────────── 22.5–26 s · 2000+ selections ─────────────────────────
+// ───────────────────────── 2000+ selections ─────────────────────────
 function Stat({ duration }: { duration: number }) {
   const frame = useCurrentFrame();
   const t = T_TEXT.stat;
@@ -150,7 +178,58 @@ function Stat({ duration }: { duration: number }) {
   );
 }
 
-// ───────────────────────── 26–30 s · logo reveal ─────────────────────────
+// ───────────────────────── Courses ─────────────────────────
+function Courses({ duration }: { duration: number }) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const t = T_TEXT.courses;
+  return (
+    <AbsoluteFill>
+      <Background />
+      <AmbientStreaks seed={30} intensity={0.3} />
+      <div style={{ position: "absolute", top: TOP + 60, left: 70, right: 70, display: "flex", flexDirection: "column", gap: 34, opacity: useExit(duration) }}>
+        <KineticLine words={t.title.split(" ")} start={4} size={76} stagger={3} style={{ justifyContent: "flex-start" }} />
+        {t.items.map((c, i) => {
+          const p = spring({ frame: frame - (16 + i * 9), fps, config: { damping: 15, stiffness: 150 } });
+          const col = USPS[i].color;
+          return (
+            <div key={c.name} style={{ display: "flex", alignItems: "center", gap: 28, padding: "30px 36px", borderRadius: 36, background: alpha(COLORS.ink, 0.3),
+              border: `3px solid ${alpha(col, 0.9)}`, opacity: Math.min(1, p * 1.4), transform: `translateX(${(1 - p) * (i % 2 ? 300 : -300)}px)` }}>
+              <div style={{ width: 22, height: 120, borderRadius: 22, background: col, boxShadow: `0 0 20px ${alpha(col, 0.6)}` }} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 64, color: COLORS.white, lineHeight: 1.1 }}>{c.name}</div>
+                <div style={{ fontFamily: FONT, fontWeight: 500, fontSize: 48, color: alpha(COLORS.white, 0.85) }}>{c.note}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </AbsoluteFill>
+  );
+}
+
+// ───────────────────────── Call to action ─────────────────────────
+function Cta({ duration }: { duration: number }) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const t = T_TEXT.cta;
+  const free = spring({ frame: frame - 26, fps, config: { damping: 9, stiffness: 200, mass: 0.6 } });
+  return (
+    <AbsoluteFill>
+      <Background />
+      <AmbientStreaks seed={40} intensity={0.35} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", gap: 22, opacity: useExit(duration) }}>
+        <KineticLine words={t.line1.split(" ")} start={4} size={88} weight={500} />
+        <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 150, color: COLORS.ink, background: COLORS.yellow, borderRadius: 999, padding: "6px 70px",
+          transform: `scale(${free}) rotate(${(1 - free) * 8}deg)`, boxShadow: `0 0 60px ${alpha(COLORS.yellow, 0.55)}` }}>{t.free}</div>
+        <KineticLine words={t.line2.split(" ")} start={34} size={96} />
+        <KineticLine words={t.sub.split(" ")} start={48} size={56} weight={500} color={alpha(COLORS.white, 0.85)} />
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+}
+
+// ───────────────────────── logo reveal ─────────────────────────
 function TeaserReveal() {
   const frame = useCurrentFrame();
   const t = T_TEXT.reveal;
@@ -173,9 +252,6 @@ function TeaserReveal() {
           {t.admissions}
         </div>
         <div style={{ fontFamily: FONT, fontWeight: 500, fontSize: 50, color: COLORS.white, ...fade(61) }}>{t.address}</div>
-        <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 64, color: COLORS.white, letterSpacing: "0.04em", ...fade(64) }}>
-          <span style={{ fontWeight: 500, fontSize: 46, color: alpha(COLORS.white, 0.8), marginRight: 18 }}>Call / WhatsApp</span>{t.phone}
-        </div>
       </div>
     </AbsoluteFill>
   );
@@ -192,12 +268,14 @@ export function SevenTeaser() {
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.ink }}>
       {seq("intro", (d) => <Intro duration={d} />)}
-      {seq("promise", (d) => <Promise_ duration={d} />)}
+      {seq("feel", (d) => <Feel duration={d} />)}
       {seq("usp1", (d) => <UspScene index={0} duration={d} />)}
       {seq("usp2", (d) => <UspScene index={1} duration={d} />)}
       {seq("usp3", (d) => <UspScene index={2} duration={d} />)}
       {seq("usp4", (d) => <UspScene index={3} duration={d} />)}
       {seq("stat", (d) => <Stat duration={d} />)}
+      {seq("courses", (d) => <Courses duration={d} />)}
+      {seq("cta", (d) => <Cta duration={d} />)}
       {seq("reveal", () => <TeaserReveal />)}
       {T_AUDIO.music ? <Audio src={staticFile(T_AUDIO.music)} volume={T_AUDIO.musicVolume} /> : null}
       {T_AUDIO.cues.map(([sec, file], i) => (
