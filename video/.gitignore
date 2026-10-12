@@ -2,3 +2,4 @@ node_modules/
 out/
 # Music ending variants are rebuilt by: python3 scripts/compose-teaser-music.py <drop|cinematic|inspiring|desi>
 public/music/seven_teaser_*.wav
+__pycache__/
