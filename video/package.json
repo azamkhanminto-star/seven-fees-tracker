@@ -8,6 +8,8 @@
     "render": "node scripts/render.mjs",
     "stills:teaser": "node scripts/stills.mjs teaser",
     "render:teaser": "node scripts/render.mjs teaser",
+    "stills:runway": "node scripts/stills.mjs runway",
+    "render:runway": "node scripts/render.mjs runway",
     "music": "python3 scripts/compose-music.py && python3 scripts/compose-teaser-music.py"
   },
   "dependencies": {
