@@ -1,0 +1,28 @@
+{
+  "name": "rdt-launch-video",
+  "private": true,
+  "description": "RDT (Root Diagnostic Test) launch video for WhatsApp Status. SEVEN Career Institute.",
+  "scripts": {
+    "studio": "remotion studio",
+    "stills": "node scripts/stills.mjs",
+    "render": "node scripts/render.mjs",
+    "stills:teaser": "node scripts/stills.mjs teaser",
+    "render:teaser": "node scripts/render.mjs teaser",
+    "stills:runway": "node scripts/stills.mjs runway",
+    "render:runway": "node scripts/render.mjs runway",
+    "music": "python3 scripts/compose-music.py && python3 scripts/compose-teaser-music.py"
+  },
+  "dependencies": {
+    "@remotion/bundler": "^4.0.534",
+    "@remotion/cli": "^4.0.534",
+    "@remotion/renderer": "^4.0.534",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "remotion": "^4.0.534"
+  },
+  "devDependencies": {
+    "@fontsource/poppins": "^5.3.0",
+    "@types/react": "^19.3.0",
+    "typescript": "^5.9.3"
+  }
+}

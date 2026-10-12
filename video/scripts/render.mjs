@@ -1,0 +1,28 @@
+/** Renders the final WhatsApp Status video: 1080×1920, 30 fps, H.264 + AAC, under 16 MB. */
+import { renderMedia } from "@remotion/renderer";
+import fs from "node:fs";
+import { execFileSync } from "node:child_process";
+import { browserExecutable, prepare, which } from "./common.mjs";
+
+const out = `out/${which.file}`;
+const { serveUrl, composition } = await prepare();
+fs.mkdirSync("out", { recursive: true });
+await renderMedia({
+  serveUrl, composition, codec: "h264", audioCodec: "aac", outputLocation: out,
+  videoBitrate: "3800k", audioBitrate: "128k", pixelFormat: "yuv420p",
+  browserExecutable: browserExecutable(),
+  onProgress: ({ progress }) => process.stdout.write(`\r${Math.round(progress * 100)}%`),
+});
+// Bring the sound to the usual social-video loudness (−14 LUFS) and re-encode the picture in the phone-safe format.
+try {
+  const tmp = out.replace(".mp4", ".tmp.mp4");
+  execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", out, "-t", String(composition.durationInFrames / composition.fps), // standard limited-range yuv420p, High@4.1: plays on every phone, WhatsApp and Instagram
+    "-vf", "format=yuv420p", "-c:v", "libx264", "-profile:v", "high", "-level", "4.1", "-preset", "slow", "-b:v", "4500k", "-maxrate", "5500k", "-bufsize", "9000k",
+    "-color_range", "tv", "-colorspace", "smpte170m", "-color_primaries", "bt709", "-color_trc", "bt709", "-af", "loudnorm=I=-14:TP=-2:LRA=11,aresample=48000,alimiter=limit=0.63:attack=2:level=false", "-ar", "48000", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", tmp]);
+  fs.renameSync(tmp, out);
+  console.log("\nloudness normalised to -14 LUFS");
+} catch {
+  console.log("\n(ffmpeg not found: skipped loudness normalisation)");
+}
+const mb = fs.statSync(out).size / 1e6;
+console.log(`\n${out}: ${mb.toFixed(1)} MB${mb >= 16 ? "  ⚠ over the 16 MB WhatsApp limit: lower videoBitrate" : ""}`);
