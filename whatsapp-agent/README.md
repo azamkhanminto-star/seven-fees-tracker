@@ -6,8 +6,10 @@ number, built on [Kapso](https://kapso.ai).
 ## What it does
 
 1. A student or parent messages the institute on WhatsApp.
-2. The agent answers questions about courses, batches, timings, fees, location
-   and the admission process. It replies in English, Hindi or Hinglish,
+2. The agent answers questions about courses, batches, timings, location
+   and the admission process. **It never discusses fees:** anyone asking about
+   fees is told a counsellor will share them, and their details go to the
+   counsellor first. It replies in English, Hindi or Hinglish,
    whichever language the person writes in.
 3. While chatting, it collects the student's name, class, course of interest,
    preferred batch, and whether a student or a parent is writing.
@@ -18,8 +20,7 @@ number, built on [Kapso](https://kapso.ai).
      replying, so the counsellor carries on in the same conversation.
 
 It answers **only** from the institute information you give it. If something
-isn't there, it says a counsellor will confirm, instead of making up a fee or
-a timing.
+isn't there, it says a counsellor will confirm, instead of making up a timing.
 
 ```
 WhatsApp message ─▶ admissions_agent ─▶ record_lead ─▶ counsellor_followup
@@ -40,9 +41,10 @@ package.json                              pins @kapso/workflows
 ### 1. Fill in the institute details
 
 Open `workflows/admission-enquiry/workflow.js` and replace every `[FILL IN]`
-in `INSTITUTE_INFO` with real details: address, office hours, each course with
-its batches, timings and fees, documents needed, demo class, refund policy,
-and the questions parents usually ask.
+in `INSTITUTE_INFO` with real details: each course with its batches and
+timings, documents needed, demo class, counsellor phone, and the questions
+parents usually ask. **Do not add fees.** Fee questions always go to a
+counsellor.
 
 Then run:
 
@@ -105,7 +107,7 @@ push again).
 
 ## Changing things later
 
-- **New batch, fee change, new course:** edit `INSTITUTE_INFO`, then
+- **New batch or new course:** edit `INSTITUTE_INFO`, then
   `kapso push workflow admission-enquiry`.
 - **How the agent behaves** (tone, what to collect, when to hand over): edit
   `SYSTEM_PROMPT` in the same file.
