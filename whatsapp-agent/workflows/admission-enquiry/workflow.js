@@ -10,7 +10,7 @@ export const PHONE_NUMBER_ID = "[FILL IN]";
 
 // Model the agent runs on. List the names your project offers with:
 // node ../.claude/skills/automate-whatsapp/scripts/list-provider-models.js
-export const PROVIDER_MODEL = "[FILL IN]";
+export const PROVIDER_MODEL = "claude-opus-5-5";
 
 // Everything the agent knows about the institute. It will not answer beyond
 // this, so keep it accurate and up to date. Plain text; edit freely.
