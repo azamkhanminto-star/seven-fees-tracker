@@ -1,0 +1,11 @@
+{
+  "name": "seven-whatsapp-agent",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check.js"
+  },
+  "devDependencies": {
+    "@kapso/workflows": "0.3.1"
+  }
+}
