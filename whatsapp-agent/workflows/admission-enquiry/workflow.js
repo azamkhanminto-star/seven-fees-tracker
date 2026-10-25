@@ -16,9 +16,9 @@ export const PROVIDER_MODEL = "[FILL IN]";
 // this, so keep it accurate and up to date. Plain text; edit freely.
 export const INSTITUTE_INFO = `
 Name: Seven Career Institute
-Address: [FILL IN — full address and a landmark]
-Google Maps link: [FILL IN]
-Office hours: [FILL IN — e.g. Mon–Sat 9:00 AM – 7:00 PM, Sunday closed]
+Address: Meer Heights, 1st Floor, Medical Road, Aligarh
+Google Maps link: https://www.google.com/maps/search/?api=1&query=Meer+Heights+Medical+Road+Aligarh
+Office hours: 9:00 AM – 9:00 PM
 Counsellor phone: [FILL IN]
 
 COURSES
