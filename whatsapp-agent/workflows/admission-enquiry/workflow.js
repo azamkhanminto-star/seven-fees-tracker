@@ -20,7 +20,7 @@ Name: Seven Career Institute
 Address: Meer Heights, 1st Floor, Medical Road, Aligarh
 Google Maps link: https://www.google.com/maps/search/?api=1&query=Meer+Heights+Medical+Road+Aligarh
 Office hours: 9:00 AM – 9:00 PM
-Counsellor phone: [FILL IN]
+Counsellor phone: +91 89792 69292 (call or WhatsApp)
 
 COURSES
 (One block per course. Add or remove as needed.)
